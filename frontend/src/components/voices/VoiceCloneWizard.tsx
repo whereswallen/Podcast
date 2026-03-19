@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { VoiceCloneJob, VoiceCloneTrainRequest } from "@/types";
+import type { VoiceCloneJob, VoiceCloneTrainRequest, VoiceCloneConsentRequest } from "@/types";
 
 const emotionOptions = [
   { value: "neutral", label: "Neutral" },
@@ -42,7 +42,7 @@ interface VoiceCloneWizardProps {
   onComplete?: () => void;
 }
 
-type WizardStep = "name" | "upload" | "configure" | "complete";
+type WizardStep = "name" | "upload" | "consent" | "configure" | "complete";
 
 export function VoiceCloneWizard({ onComplete }: VoiceCloneWizardProps) {
   const {
@@ -62,6 +62,12 @@ export function VoiceCloneWizard({ onComplete }: VoiceCloneWizardProps) {
     pitch: 0.0,
     emotion: "neutral",
     style: "conversational",
+  });
+  const [consent, setConsent] = useState<VoiceCloneConsentRequest>({
+    consent_name: "",
+    consent_statement:
+      "I confirm that I have the right to clone this voice and the voice owner has given explicit permission.",
+    consent_given: false,
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -245,21 +251,96 @@ export function VoiceCloneWizard({ onComplete }: VoiceCloneWizardProps) {
                 Back
               </Button>
               <Button
-                onClick={() => setStep("configure")}
+                onClick={() => setStep("consent")}
                 disabled={
                   activeJob.sample_urls.length === 0 ||
                   activeJob.total_duration_seconds < 10
                 }
                 className="flex-1"
               >
-                Next: Configure Voice
+                Next: Consent Verification
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 3: Configure */}
+      {/* Step 3: Consent */}
+      {step === "consent" && activeJob && (
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3 mb-2">
+              <AlertCircle className="w-5 h-5 text-amber-500" />
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
+                Consent Verification
+              </h3>
+            </div>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Voice cloning requires explicit consent from the voice owner.
+              Please confirm you have permission to clone this voice.
+            </p>
+
+            <Input
+              label="Voice Owner Name"
+              value={consent.consent_name}
+              onChange={(e) =>
+                setConsent({ ...consent, consent_name: e.target.value })
+              }
+              placeholder="Full name of the person whose voice is being cloned"
+            />
+
+            <Input
+              label="Voice Owner Email (optional)"
+              value={consent.consent_email || ""}
+              onChange={(e) =>
+                setConsent({ ...consent, consent_email: e.target.value })
+              }
+              placeholder="Email for consent record"
+            />
+
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                {consent.consent_statement}
+              </p>
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consent.consent_given}
+                onChange={(e) =>
+                  setConsent({ ...consent, consent_given: e.target.checked })
+                }
+                className="mt-1 rounded border-[hsl(var(--border))]"
+              />
+              <span className="text-sm text-[hsl(var(--foreground))]">
+                I confirm that the voice owner has given explicit permission
+                for their voice to be cloned and used in podcast production.
+              </span>
+            </label>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep("upload")}>
+                Back
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (!activeJob) return;
+                  const { submitConsent } = useVoiceCloneStore.getState();
+                  await submitConsent(activeJob.id, consent);
+                  setStep("configure");
+                }}
+                disabled={!consent.consent_given || !consent.consent_name.trim()}
+                className="flex-1"
+              >
+                Confirm & Continue
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Step 4: Configure */}
       {step === "configure" && activeJob && (
         <Card>
           <CardContent className="p-6 space-y-4">

@@ -24,6 +24,7 @@ import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ScriptBlock } from "@/components/editor/ScriptBlock";
 import { GeneratePanel } from "@/components/editor/GeneratePanel";
+import { ContentTools } from "@/components/editor/ContentTools";
 import { AudioPlayer } from "@/components/player/AudioPlayer";
 import { VersionHistory } from "@/components/editor/VersionHistory";
 import { BlockTimingBar } from "@/components/editor/BlockTimingBar";
@@ -262,10 +263,18 @@ export default function EditorPage() {
         <div className="flex-[3] border-l border-[hsl(var(--border))] overflow-y-auto bg-[hsl(var(--background))]">
           <div className="p-4 space-y-6">
             {/* Generate Script Section */}
-            <GeneratePanel episodeId={episodeId} />
+            <GeneratePanel episodeId={episodeId} podcastId={episode?.podcast_id} />
 
             {/* Divider */}
             <div className="border-t border-[hsl(var(--border))]" />
+
+            {/* Content Tools */}
+            {blocks.length > 0 && (
+              <>
+                <ContentTools episodeId={episodeId} podcastId={episode?.podcast_id} />
+                <div className="border-t border-[hsl(var(--border))]" />
+              </>
+            )}
 
             {/* Voice Assignment */}
             <div>

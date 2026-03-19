@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.voice import VoiceProfile
 from app.models.voice_clone import VoiceCloneJob
 from app.schemas.voice import (
+    VoiceCloneConsentRequest,
     VoiceCloneCreateRequest,
     VoiceCloneJobResponse,
     VoiceCloneTrainRequest,
@@ -139,6 +140,41 @@ async def upload_sample(
     return VoiceCloneJobResponse.model_validate(job)
 
 
+@router.post("/{job_id}/consent", response_model=VoiceCloneJobResponse)
+def submit_consent(
+    job_id: UUID,
+    payload: VoiceCloneConsentRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VoiceCloneJobResponse:
+    """Submit consent verification for voice cloning."""
+    job = (
+        db.query(VoiceCloneJob)
+        .filter(VoiceCloneJob.id == job_id, VoiceCloneJob.user_id == current_user.id)
+        .first()
+    )
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Clone job not found")
+
+    if not payload.consent_given:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Consent must be explicitly granted (consent_given must be true)",
+        )
+
+    from datetime import datetime, timezone
+
+    job.consent_given = True
+    job.consent_name = payload.consent_name
+    job.consent_email = payload.consent_email
+    job.consent_statement = payload.consent_statement
+    job.consent_given_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(job)
+    return VoiceCloneJobResponse.model_validate(job)
+
+
 @router.post("/{job_id}/train", response_model=VoiceCloneJobResponse)
 async def train_voice(
     job_id: UUID,
@@ -154,6 +190,12 @@ async def train_voice(
     )
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Clone job not found")
+
+    if not job.consent_given:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Consent verification required before training. Submit consent first.",
+        )
 
     if not job.sample_urls:
         raise HTTPException(

@@ -17,6 +17,7 @@ from app.api.routes.podcasts import router as podcasts_router
 from app.api.routes.scripts import router as scripts_router
 from app.api.routes.voices import router as voices_router
 from app.api.routes.mixer import router as mixer_router
+from app.api.routes.content_tools import router as content_tools_router
 from app.api.routes.voice_clone import router as voice_clone_router
 from app.core.config import settings
 
@@ -57,6 +58,7 @@ app.include_router(audio_router)
 app.include_router(ai_router)
 app.include_router(mixer_router)
 app.include_router(voice_clone_router)
+app.include_router(content_tools_router)
 app.include_router(brand_router)
 app.include_router(intro_outro_router)
 app.include_router(knowledge_router)

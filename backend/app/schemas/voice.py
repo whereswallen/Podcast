@@ -40,6 +40,14 @@ class VoiceCloneCreateRequest(BaseModel):
     description: Optional[str] = None
 
 
+class VoiceCloneConsentRequest(BaseModel):
+    """Consent verification for voice cloning."""
+    consent_name: str  # Name of the voice owner
+    consent_email: Optional[str] = None  # Email for consent record
+    consent_statement: str = "I confirm that I have the right to clone this voice and the voice owner has given explicit permission."
+    consent_given: bool  # Must be True
+
+
 class VoiceCloneJobResponse(BaseModel):
     id: UUID
     user_id: UUID
@@ -51,6 +59,10 @@ class VoiceCloneJobResponse(BaseModel):
     training_config: Optional[dict] = None
     error_message: Optional[str] = None
     progress: int
+    consent_given: bool
+    consent_name: Optional[str] = None
+    consent_email: Optional[str] = None
+    consent_given_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

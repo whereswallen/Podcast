@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON, UUID
 from sqlalchemy.orm import relationship
 
@@ -20,6 +20,13 @@ class VoiceCloneJob(TimestampMixin, Base):
     training_config = Column(JSON, nullable=True, default=dict)  # Training parameters
     error_message = Column(Text, nullable=True)
     progress = Column(Integer, nullable=False, default=0)  # 0-100
+
+    # Consent verification
+    consent_given = Column(Boolean, nullable=False, default=False)
+    consent_name = Column(String(255), nullable=True)  # Name of the person whose voice is being cloned
+    consent_email = Column(String(255), nullable=True)  # Email for consent record
+    consent_statement = Column(Text, nullable=True)  # Consent statement text
+    consent_given_at = Column(DateTime(timezone=True), nullable=True)
 
     user = relationship("User", backref="voice_clone_jobs")
     voice_profile = relationship("VoiceProfile", backref="clone_job")

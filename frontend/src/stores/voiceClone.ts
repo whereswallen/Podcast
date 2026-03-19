@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import api from "@/lib/api";
-import type { VoiceCloneJob, VoiceCloneTrainRequest } from "@/types";
+import type { VoiceCloneJob, VoiceCloneTrainRequest, VoiceCloneConsentRequest } from "@/types";
 
 interface VoiceCloneState {
   jobs: VoiceCloneJob[];
@@ -14,6 +14,7 @@ interface VoiceCloneState {
   createJob: (name: string) => Promise<VoiceCloneJob | null>;
   loadJob: (jobId: string) => Promise<void>;
   uploadSample: (jobId: string, file: File) => Promise<void>;
+  submitConsent: (jobId: string, consent: VoiceCloneConsentRequest) => Promise<void>;
   trainVoice: (jobId: string, config: VoiceCloneTrainRequest) => Promise<void>;
   deleteJob: (jobId: string) => Promise<void>;
 }
@@ -88,6 +89,22 @@ export const useVoiceCloneStore = create<VoiceCloneState>((set, get) => ({
         (err as { response?: { data?: { detail?: string } } })?.response?.data
           ?.detail || "Failed to upload sample.";
       set({ error: message, isUploading: false });
+    }
+  },
+
+  submitConsent: async (jobId: string, consent: VoiceCloneConsentRequest) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.post<VoiceCloneJob>(
+        `/api/voice-clone/${jobId}/consent`,
+        consent
+      );
+      set({ activeJob: response.data, isLoading: false });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to submit consent.";
+      set({ error: message, isLoading: false });
     }
   },
 

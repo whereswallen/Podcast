@@ -382,3 +382,70 @@ export interface VoiceCloneTrainRequest {
   emotion: string;
   style: string;
 }
+
+export interface VoiceCloneConsentRequest {
+  consent_name: string;
+  consent_email?: string;
+  consent_statement: string;
+  consent_given: boolean;
+}
+
+// ---- AI Content Tools ----
+export interface ShowNotes {
+  summary: string;
+  key_takeaways: string[];
+  timestamps: { time: string; topic: string }[];
+  resources: string[];
+  guests: string[];
+  quotes: string[];
+}
+
+export interface TranscriptLine {
+  timestamp: string;
+  speaker: string;
+  text: string;
+}
+
+export interface Transcript {
+  lines: TranscriptLine[];
+  total_duration: string;
+  word_count: number;
+}
+
+export interface SEOMetadata {
+  seo_title: string;
+  meta_description: string;
+  tags: string[];
+  social_post_twitter: string;
+  social_post_linkedin: string;
+  social_post_short: string;
+  episode_description: string;
+}
+
+export interface FactCheckItem {
+  block_id?: string;
+  claim: string;
+  severity: "high" | "medium" | "low";
+  suggestion: string;
+  context?: string;
+}
+
+export interface ContentSuggestion {
+  title: string;
+  description: string;
+  format: string;
+  angle: string;
+  connects_to: string;
+}
+
+export interface TranslateRequest {
+  target_language: string;
+}
+
+export interface TranslateResponse {
+  source_language: string;
+  target_language: string;
+  target_language_name: string;
+  blocks: Record<string, unknown>[];
+  block_count: number;
+}
