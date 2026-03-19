@@ -7,9 +7,12 @@ import {
   Mic2,
   Settings2,
   Volume2,
+  Wand2,
 } from "lucide-react";
 import api from "@/lib/api";
 import type { VoiceProfile, VoiceSettings, CreateVoiceRequest } from "@/types";
+import { VoiceCloneWizard } from "@/components/voices/VoiceCloneWizard";
+import { VoiceCloneList } from "@/components/voices/VoiceCloneList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -47,6 +50,7 @@ export default function VoicesPage() {
   const [voices, setVoices] = useState<VoiceProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showCloneWizard, setShowCloneWizard] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
   const [newVoice, setNewVoice] = useState<CreateVoiceRequest>({
@@ -126,6 +130,13 @@ export default function VoicesPage() {
         title="Voice Library"
         description="Manage built-in and custom voice profiles"
       >
+        <Button
+          variant="outline"
+          onClick={() => setShowCloneWizard(!showCloneWizard)}
+        >
+          <Wand2 className="w-4 h-4" />
+          Clone Voice
+        </Button>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger>
             <Button>
@@ -228,6 +239,21 @@ export default function VoicesPage() {
         </Dialog>
       </Header>
 
+      {/* Voice Clone Section */}
+      {showCloneWizard && (
+        <div className="mb-8">
+          <VoiceCloneWizard
+            onComplete={() => {
+              setShowCloneWizard(false);
+              fetchVoices();
+            }}
+          />
+        </div>
+      )}
+
+      <VoiceCloneList />
+
+      {/* Voice Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (

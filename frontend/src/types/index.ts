@@ -352,3 +352,33 @@ export interface KnowledgeContext {
   recurring: string[];
   total_entries: number;
 }
+
+// ---- Voice Cloning ----
+export type CloneJobStatus = "pending" | "uploading" | "processing" | "training" | "ready" | "failed";
+
+export interface VoiceCloneJob {
+  id: string;
+  user_id: string;
+  voice_profile_id?: string;
+  name: string;
+  status: CloneJobStatus;
+  sample_urls: string[];
+  total_duration_seconds: number;
+  training_config?: Record<string, unknown>;
+  error_message?: string;
+  progress: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VoiceCloneCreateRequest {
+  name: string;
+  description?: string;
+}
+
+export interface VoiceCloneTrainRequest {
+  speed: number;
+  pitch: number;
+  emotion: string;
+  style: string;
+}

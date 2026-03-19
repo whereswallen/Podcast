@@ -8,6 +8,7 @@ from app.models.audio_project import AudioProject
 from app.models.brand import BrandProfile
 from app.models.intro_outro import IntroOutroTemplate
 from app.models.knowledge import KnowledgeEntry
+from app.models.voice_clone import VoiceCloneJob
 
 __all__ = [
     "Base",
@@ -22,4 +23,5 @@ __all__ = [
     "BrandProfile",
     "IntroOutroTemplate",
     "KnowledgeEntry",
+    "VoiceCloneJob",
 ]
