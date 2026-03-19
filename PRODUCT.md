@@ -141,6 +141,7 @@ Maintain a consistent podcast identity across every episode.
 - Brand colors for visual consistency
 - Default voice assignments by speaker role
 - Default music and SFX selections
+- **Content domain** classification (`general`, `legal`, `medical`, `financial`, `technical`) — drives fact-check strictness and publish gates
 
 **AI Brand Generation:**
 - Auto-generate a complete brand profile from your podcast title and description (3 credits)
@@ -191,10 +192,55 @@ One-click AI tools that generate everything around the episode.
 | **Show Notes** | Summary, key takeaways, timestamps, resources, guest list, notable quotes | 3 |
 | **Transcript** | Formatted transcript with speaker labels and timestamps | 2 |
 | **SEO Metadata** | SEO title, meta description, tags, Twitter post, LinkedIn post | 2 |
-| **Fact-Check** | Claims flagged for verification with severity levels and source suggestions | 5 |
+| **Fact-Check** | Claims flagged with severity, confidence scores, verification sources, and resolution tracking (see Hallucination Safeguards below) | 5 |
 | **Content Suggestions** | AI-generated topic ideas based on podcast history and trends | 3 |
 | **Translation** | Full script translation into 8 major languages | 8 |
 | **Inline Rewrite** | Rewrite highlighted text with AI assistance | 2 |
+
+#### Hallucination Safeguards (Fact-Check System)
+
+The fact-check system is designed to prevent AI-generated content from containing unverified or invented data, with special rigor for professional and legal contexts.
+
+**Per-Claim Analysis:**
+- **Severity levels** (`high` / `medium` / `low`) — enforced as a strict enum, not free text
+- **Confidence score** (0.0–1.0) — AI self-reports how likely a claim is problematic; displayed as a percentage badge
+- **Verification sources** — each flagged claim includes 1–3 suggested reference authorities (e.g., "CDC guidelines", "SEC filing database", "PubMed")
+- **Exact quoting** — the AI quotes claims verbatim from the script for easy location
+
+**Domain-Aware Escalation:**
+Fact-check strictness scales automatically based on the podcast's brand domain:
+
+| Domain | Behavior |
+|--------|----------|
+| `general` | Standard check — flags verifiable claims, ignores opinions |
+| `legal` | Maximum scrutiny — any regulation, case law, or legal recommendation flagged as high |
+| `medical` | Maximum scrutiny — any dosage, treatment, or clinical claim flagged as high |
+| `financial` | Maximum scrutiny — any figure, regulation, or investment advice flagged as high |
+| `technical` | Standard check with additional attention to specifications and version numbers |
+
+**Knowledge Base Cross-Referencing:**
+- `key_fact` and `source_material` entries from the Knowledge Base are injected into the fact-check prompt
+- The AI cross-references script claims against known facts, flagging contradictions
+- Brand `content_rules` violations are flagged as high severity
+
+**Publish Gate:**
+- Fact-check results are **persisted to the database** (not ephemeral component state)
+- Results survive page reloads and are available as an audit trail
+- **Regulated domains** (legal, medical, financial): publishing is **blocked** if ANY unresolved high-severity flag exists
+- **General domain**: publishing is blocked when 3+ unresolved high-severity flags exist
+- Attempting to set episode status to "published" returns HTTP 409 with an actionable error
+
+**Resolution Workflow:**
+- Each flag has a "Mark as verified" action requiring a **written attestation** explaining how the claim was checked
+- Resolution tracks: who resolved it, when, and the verification note
+- Resolved flags can be **re-opened** if new information surfaces
+- The publish gate re-evaluates in real-time as flags are resolved
+
+**Anti-Hallucination Prompt Engineering:**
+- System prompt explicitly instructs the AI: "You MUST NOT invent facts, URLs, or statistics"
+- When uncertain, the AI is instructed to flag and disclose uncertainty rather than assume correctness
+- Script text limit raised to 15,000 characters to avoid partial analysis
+- Response token budget doubled (4,096) for thorough coverage of long scripts
 
 ---
 
@@ -258,7 +304,7 @@ Platform management tools for operators.
                            │ REST API (Axios)
 ┌──────────────────────────▼───────────────────────────────────┐
 │              Backend — FastAPI / Python                       │
-│   17 Route Modules │ 12 Models │ 10+ Services │ Celery Tasks │
+│   17 Route Modules │ 13 Models │ 10+ Services │ Celery Tasks │
 └───┬──────────┬─────────────┬──────────────┬──────────────────┘
     │          │             │              │
     ▼          ▼             ▼              ▼
@@ -286,12 +332,12 @@ Docker Compose with 6 services: PostgreSQL 16, Redis 7, MinIO, FastAPI (Uvicorn)
 
 | Metric | Count |
 |--------|-------|
-| Total source files | 139 |
-| Backend Python files | 63 |
+| Total source files | 141 |
+| Backend Python files | 65 |
 | Frontend TypeScript/TSX files | 76 |
 | API route modules | 17 |
-| API endpoints | 60+ |
-| Database models | 12 |
+| API endpoints | 63+ |
+| Database models | 13 |
 | Frontend pages | 17 |
 | UI components | 42 |
 | State stores | 10 |
@@ -356,3 +402,4 @@ Traditional podcast tools (Riverside, Descript, Anchor) assume you already have 
 - Credit-based pricing (pay for what you use, not a flat seat fee)
 - Voice cloning with built-in consent verification
 - Full audio mixing studio, not just raw TTS output
+- **Hallucination safeguards** — domain-aware fact-checking with publish gates, confidence scoring, and mandatory verification attestation for regulated content (legal, medical, financial)
