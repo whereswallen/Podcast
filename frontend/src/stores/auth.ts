@@ -10,6 +10,7 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  handleOAuthCallback: (token: string) => Promise<void>;
   logout: () => void;
   loadFromStorage: () => void;
   clearError: () => void;
@@ -68,6 +69,30 @@ export const useAuthStore = create<AuthState>((set) => ({
       const message =
         (err as { response?: { data?: { detail?: string } } })?.response?.data
           ?.detail || "Registration failed. Please try again.";
+      set({ error: message, isLoading: false });
+      throw new Error(message);
+    }
+  },
+
+  handleOAuthCallback: async (token: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      localStorage.setItem("token", token);
+      // Fetch user profile with the new token
+      const response = await api.get<User>("/api/auth/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const user = response.data;
+      localStorage.setItem("user", JSON.stringify(user));
+      set({
+        user,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (err: unknown) {
+      localStorage.removeItem("token");
+      const message = "OAuth authentication failed. Please try again.";
       set({ error: message, isLoading: false });
       throw new Error(message);
     }

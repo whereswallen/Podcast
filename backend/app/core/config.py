@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY: str = ""
     S3_SECRET_KEY: str = ""
 
+    # OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # CORS
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",

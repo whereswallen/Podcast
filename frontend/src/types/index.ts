@@ -4,6 +4,34 @@ export interface User {
   email: string;
   name: string;
   avatar_url?: string;
+  plan_tier?: string;
+  is_admin?: boolean;
+  auth_provider?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ---- Admin ----
+export interface PlatformStats {
+  total_users: number;
+  active_users: number;
+  total_podcasts: number;
+  total_episodes: number;
+  admin_count: number;
+  provider_breakdown: Record<string, number>;
+  plan_breakdown: Record<string, number>;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url?: string;
+  plan_tier: string;
+  is_active: boolean;
+  is_admin: boolean;
+  auth_provider: string;
+  podcast_count: number;
   created_at: string;
   updated_at: string;
 }

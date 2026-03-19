@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { CommandPalette } from "@/components/layout/CommandPalette";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -36,8 +38,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
+      <MobileNav />
+      <CommandPalette />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 lg:p-8 max-w-7xl mx-auto">{children}</div>
+        <div className="p-6 lg:p-8 max-w-7xl mx-auto pt-14 lg:pt-6">{children}</div>
       </main>
     </div>
   );

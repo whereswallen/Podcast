@@ -11,9 +11,12 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Shield,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
+import { ThemeToggle } from "./ThemeToggle";
 import { useState } from "react";
 
 const navItems = [
@@ -57,7 +60,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen border-r border-[hsl(var(--border))] bg-[hsl(var(--card))] transition-all duration-200",
+        "hidden lg:flex flex-col h-screen border-r border-[hsl(var(--border))] bg-[hsl(var(--card))] transition-all duration-200",
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -83,6 +86,24 @@ export function Sidebar() {
         </button>
       </div>
 
+      {/* Search hint */}
+      {!collapsed && (
+        <button
+          onClick={() => {
+            document.dispatchEvent(
+              new KeyboardEvent("keydown", { key: "k", metaKey: true })
+            );
+          }}
+          className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-xs text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span className="flex-1 text-left">Search...</span>
+          <kbd className="px-1.5 py-0.5 text-[10px] font-mono bg-[hsl(var(--muted))] rounded">
+            Cmd+K
+          </kbd>
+        </button>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-1">
         {navItems.map((item) => {
@@ -93,9 +114,9 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
                 isActive
-                  ? "bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300"
+                  ? "bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 shadow-sm"
                   : "text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))]"
               )}
               title={collapsed ? item.label : undefined}
@@ -105,20 +126,58 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Admin link */}
+        {user?.is_admin && (
+          <>
+            <div className="my-2 border-t border-[hsl(var(--border))]" />
+            <Link
+              href="/admin"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                pathname.startsWith("/admin")
+                  ? "bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300"
+                  : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20"
+              )}
+              title={collapsed ? "Admin" : undefined}
+            >
+              <Shield className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && <span>Admin</span>}
+            </Link>
+          </>
+        )}
       </nav>
 
       {/* User section */}
       <div className="p-3 border-t border-[hsl(var(--border))]">
+        {/* Theme toggle */}
+        <div
+          className={cn(
+            "flex items-center mb-2",
+            collapsed ? "justify-center" : "justify-end px-3"
+          )}
+        >
+          <ThemeToggle />
+        </div>
+
         <div
           className={cn(
             "flex items-center gap-3 px-3 py-2",
             collapsed && "justify-center"
           )}
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-secondary-500 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-white">
-              {user?.name?.charAt(0)?.toUpperCase() || "U"}
-            </span>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-secondary-500 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-bold text-white">
+                {user?.name?.charAt(0)?.toUpperCase() || "U"}
+              </span>
+            )}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">

@@ -31,5 +31,7 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str) -> bool:
+def verify_password(plain_password: str, hashed_password: str | None) -> bool:
+    if hashed_password is None:
+        return False  # OAuth users have no password
     return pwd_context.verify(plain_password, hashed_password)
