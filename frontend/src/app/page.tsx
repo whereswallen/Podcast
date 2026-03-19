@@ -15,7 +15,7 @@ export default function LandingPage() {
                 <Mic2 className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-                PodcastAI
+                CastNode
               </span>
             </div>
             <div className="flex items-center gap-4">
@@ -147,10 +147,10 @@ export default function LandingPage() {
               <div className="w-6 h-6 rounded bg-gradient-to-br from-primary-500 to-secondary-600 flex items-center justify-center">
                 <Mic2 className="w-4 h-4 text-white" />
               </div>
-              <span className="text-sm font-semibold">PodcastAI</span>
+              <span className="text-sm font-semibold">CastNode</span>
             </div>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              &copy; 2026 PodcastAI. All rights reserved.
+              &copy; 2026 CastNode. All rights reserved.
             </p>
           </div>
         </div>

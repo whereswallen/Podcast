@@ -73,7 +73,7 @@ export function AdminSidebar() {
       {/* Footer */}
       <div className="p-3 border-t border-slate-800">
         <div className="flex items-center justify-between px-3 py-2">
-          <span className="text-xs text-slate-500">PodcastAI Admin</span>
+          <span className="text-xs text-slate-500">CastNode Admin</span>
           <ThemeToggle />
         </div>
       </div>

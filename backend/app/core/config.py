@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
 
     # S3 / Object Storage
-    S3_BUCKET: str = "podcast-audio"
+    S3_BUCKET: str = "castnode-audio"
     S3_ENDPOINT: str = ""
     S3_ACCESS_KEY: str = ""
     S3_SECRET_KEY: str = ""
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
-    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:3000"  # Production: https://castnode.ai
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""

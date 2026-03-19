@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "AI Podcast Generator",
+  title: "CastNode — AI Podcast Generator",
   description:
-    "Create professional podcasts with AI-powered script generation, voice synthesis, and full audio production.",
+    "Create professional podcasts with AI-powered script generation, voice synthesis, and full audio production. castnode.ai",
 };
 
 export default function RootLayout({

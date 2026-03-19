@@ -15,7 +15,7 @@ export default function AuthLayout({
               <Mic2 className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">
-              PodcastAI
+              CastNode
             </span>
           </Link>
         </div>

@@ -35,8 +35,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AI Podcast Generator API",
-    description="Backend API for generating AI-powered podcast scripts and audio",
+    title="CastNode API",
+    description="Backend API for CastNode — AI-powered podcast generation, voice synthesis, and audio production",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -77,4 +77,4 @@ app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 @app.get("/api/health")
 def health_check() -> dict:
-    return {"status": "healthy", "service": "podcast-api"}
+    return {"status": "healthy", "service": "castnode-api"}
