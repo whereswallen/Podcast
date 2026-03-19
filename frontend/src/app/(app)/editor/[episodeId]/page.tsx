@@ -13,6 +13,7 @@ import {
   CheckCircle,
   AlertCircle,
   History,
+  Sliders,
 } from "lucide-react";
 import api from "@/lib/api";
 import { cn, countWords, estimateDuration, formatDuration } from "@/lib/utils";
@@ -179,6 +180,14 @@ export default function EditorPage() {
               <CheckCircle className="w-3.5 h-3.5" />
               Saved
             </div>
+          )}
+          {blocks.length > 0 && (
+            <Link href={`/studio/${episodeId}`}>
+              <Button variant="outline" size="sm">
+                <Sliders className="w-4 h-4" />
+                Studio
+              </Button>
+            </Link>
           )}
           <Button
             variant="outline"

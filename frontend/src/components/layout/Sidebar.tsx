@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Mic2,
+  Sliders,
   Settings,
   LogOut,
   ChevronLeft,
@@ -24,6 +25,11 @@ const navItems = [
     label: "Voices",
     href: "/voices",
     icon: Mic2,
+  },
+  {
+    label: "Studio",
+    href: "/studio",
+    icon: Sliders,
   },
   {
     label: "Settings",

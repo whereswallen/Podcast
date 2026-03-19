@@ -194,3 +194,52 @@ export interface InlineRewriteRequest {
 export interface InlineRewriteResponse {
   text: string;
 }
+
+// ---- Audio Project / Timeline ----
+export interface TrackSegment {
+  id: string;
+  start_ms: number;
+  end_ms: number;
+  source_url?: string;
+  source_type: "speech" | "music" | "sfx";
+  trim_start_ms: number;
+  trim_end_ms: number;
+  fade_in_ms: number;
+  fade_out_ms: number;
+  volume_db: number;
+}
+
+export interface Track {
+  id: string;
+  type: "speech" | "music" | "sfx";
+  name: string;
+  segments: TrackSegment[];
+  volume: number;
+  pan: number;
+  muted: boolean;
+  solo: boolean;
+}
+
+export interface AudioProject {
+  id: string;
+  episode_id: string;
+  tracks: Track[];
+  master_volume: number;
+  duration_ms: number;
+}
+
+export interface MusicItem {
+  id: string;
+  name: string;
+  category: string;
+  bpm: number;
+  duration: number;
+  mood: string;
+}
+
+export interface SFXItem {
+  id: string;
+  name: string;
+  category: string;
+  duration_ms: number;
+}

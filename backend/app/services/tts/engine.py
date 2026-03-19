@@ -98,6 +98,210 @@ class TTSEngine:
             "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
             "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
         },
+        {
+            "id": "00000000-0000-0000-0000-000000000006",
+            "user_id": None,
+            "name": "Luna",
+            "engine": "builtin",
+            "model_id": "voice-luna-v1",
+            "settings": {"speed": 0.9, "pitch": 0.2, "emotion": "dreamy", "style": "asmr"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000007",
+            "user_id": None,
+            "name": "Marcus",
+            "engine": "builtin",
+            "model_id": "voice-marcus-v1",
+            "settings": {"speed": 0.85, "pitch": -0.2, "emotion": "serious", "style": "documentary"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000008",
+            "user_id": None,
+            "name": "Priya",
+            "engine": "builtin",
+            "model_id": "voice-priya-v1",
+            "settings": {"speed": 1.05, "pitch": 0.1, "emotion": "cheerful", "style": "tech"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000009",
+            "user_id": None,
+            "name": "Diego",
+            "engine": "builtin",
+            "model_id": "voice-diego-v1",
+            "settings": {"speed": 1.0, "pitch": -0.05, "emotion": "passionate", "style": "sports"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000010",
+            "user_id": None,
+            "name": "Aisha",
+            "engine": "builtin",
+            "model_id": "voice-aisha-v1",
+            "settings": {"speed": 1.0, "pitch": 0.15, "emotion": "empathetic", "style": "wellness"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000011",
+            "user_id": None,
+            "name": "Kai",
+            "engine": "builtin",
+            "model_id": "voice-kai-v1",
+            "settings": {"speed": 1.1, "pitch": 0.0, "emotion": "witty", "style": "comedy"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000012",
+            "user_id": None,
+            "name": "Elena",
+            "engine": "builtin",
+            "model_id": "voice-elena-v1",
+            "settings": {"speed": 0.95, "pitch": 0.1, "emotion": "elegant", "style": "culture"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000013",
+            "user_id": None,
+            "name": "Ravi",
+            "engine": "builtin",
+            "model_id": "voice-ravi-v1",
+            "settings": {"speed": 1.0, "pitch": -0.1, "emotion": "scholarly", "style": "science"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000014",
+            "user_id": None,
+            "name": "Zara",
+            "engine": "builtin",
+            "model_id": "voice-zara-v1",
+            "settings": {"speed": 1.15, "pitch": 0.05, "emotion": "bold", "style": "business"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000015",
+            "user_id": None,
+            "name": "Oliver",
+            "engine": "builtin",
+            "model_id": "voice-oliver-v1",
+            "settings": {"speed": 0.9, "pitch": -0.15, "emotion": "reflective", "style": "philosophy"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000016",
+            "user_id": None,
+            "name": "Mei",
+            "engine": "builtin",
+            "model_id": "voice-mei-v1",
+            "settings": {"speed": 1.05, "pitch": 0.2, "emotion": "gentle", "style": "meditation"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000017",
+            "user_id": None,
+            "name": "Andre",
+            "engine": "builtin",
+            "model_id": "voice-andre-v1",
+            "settings": {"speed": 1.0, "pitch": -0.1, "emotion": "smooth", "style": "jazz"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000018",
+            "user_id": None,
+            "name": "Sofia",
+            "engine": "builtin",
+            "model_id": "voice-sofia-v1",
+            "settings": {"speed": 1.1, "pitch": 0.1, "emotion": "vibrant", "style": "travel"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000019",
+            "user_id": None,
+            "name": "Niko",
+            "engine": "builtin",
+            "model_id": "voice-niko-v1",
+            "settings": {"speed": 0.95, "pitch": -0.05, "emotion": "gritty", "style": "true-crime"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000020",
+            "user_id": None,
+            "name": "Yuki",
+            "engine": "builtin",
+            "model_id": "voice-yuki-v1",
+            "settings": {"speed": 1.0, "pitch": 0.15, "emotion": "bright", "style": "kids"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000021",
+            "user_id": None,
+            "name": "Hassan",
+            "engine": "builtin",
+            "model_id": "voice-hassan-v1",
+            "settings": {"speed": 0.9, "pitch": -0.2, "emotion": "commanding", "style": "history"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
+        {
+            "id": "00000000-0000-0000-0000-000000000022",
+            "user_id": None,
+            "name": "Chloe",
+            "engine": "builtin",
+            "model_id": "voice-chloe-v1",
+            "settings": {"speed": 1.05, "pitch": 0.1, "emotion": "bubbly", "style": "pop-culture"},
+            "sample_url": None,
+            "is_active": True,
+            "created_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+            "updated_at": datetime(2024, 1, 1, tzinfo=timezone.utc),
+        },
     ]
 
     def list_builtin_voices(self) -> list[VoiceProfileResponse]:
@@ -209,8 +413,77 @@ class TTSEngine:
         combined.export(output_buffer, format="mp3")
         return output_buffer.getvalue()
 
+    def apply_compression(
+        self, audio: AudioSegment, threshold_db: float = -20.0, ratio: float = 4.0
+    ) -> AudioSegment:
+        """Apply simple dynamic range compression using pydub gain adjustments.
+
+        Analyzes audio in chunks and reduces gain on segments that exceed the threshold.
+
+        Args:
+            audio: Input audio segment.
+            threshold_db: dBFS level above which compression is applied.
+            ratio: Compression ratio (e.g., 4.0 means 4:1 compression).
+
+        Returns:
+            Compressed audio segment.
+        """
+        chunk_ms = 50  # Process in 50ms chunks
+        compressed = AudioSegment.empty()
+
+        for i in range(0, len(audio), chunk_ms):
+            chunk = audio[i : i + chunk_ms]
+            if chunk.dBFS > threshold_db:
+                # Amount over threshold
+                over_db = chunk.dBFS - threshold_db
+                # Reduce gain based on ratio
+                gain_reduction = over_db * (1 - 1 / ratio)
+                chunk = chunk.apply_gain(-gain_reduction)
+            compressed += chunk
+
+        return compressed
+
+    def apply_eq(
+        self,
+        audio: AudioSegment,
+        low_gain: float = 0.0,
+        mid_gain: float = 0.0,
+        high_gain: float = 0.0,
+    ) -> AudioSegment:
+        """Apply simple 3-band EQ using pydub filters.
+
+        Splits audio into low/mid/high frequency bands and applies gain to each.
+
+        Args:
+            audio: Input audio segment.
+            low_gain: Gain in dB for low frequencies (below 300Hz).
+            mid_gain: Gain in dB for mid frequencies (300Hz - 4000Hz).
+            high_gain: Gain in dB for high frequencies (above 4000Hz).
+
+        Returns:
+            EQ-adjusted audio segment.
+        """
+        from pydub.effects import low_pass_filter, high_pass_filter
+
+        # Split into bands
+        low_band = low_pass_filter(audio, 300)
+        mid_band = high_pass_filter(low_pass_filter(audio, 4000), 300)
+        high_band = high_pass_filter(audio, 4000)
+
+        # Apply gains
+        if low_gain != 0.0:
+            low_band = low_band.apply_gain(low_gain)
+        if mid_gain != 0.0:
+            mid_band = mid_band.apply_gain(mid_gain)
+        if high_gain != 0.0:
+            high_band = high_band.apply_gain(high_gain)
+
+        # Recombine bands by overlaying
+        result = low_band.overlay(mid_band).overlay(high_band)
+        return result
+
     def apply_post_processing(self, audio_bytes: bytes) -> bytes:
-        """Apply post-processing to audio: normalization to approximately -16 LUFS.
+        """Apply post-processing to audio: normalization, compression, and EQ.
 
         Args:
             audio_bytes: Raw MP3 audio bytes.
@@ -228,6 +501,12 @@ class TTSEngine:
         target_dbfs = -16.0
         change_in_dbfs = target_dbfs - audio.dBFS
         audio = audio.apply_gain(change_in_dbfs)
+
+        # Apply compression to tame dynamic range
+        audio = self.apply_compression(audio, threshold_db=-20.0, ratio=4.0)
+
+        # Apply EQ: slight boost to mids for voice clarity, gentle high-end presence
+        audio = self.apply_eq(audio, low_gain=-1.0, mid_gain=1.5, high_gain=0.5)
 
         # Export processed audio
         output_buffer = io.BytesIO()

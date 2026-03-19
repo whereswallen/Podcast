@@ -13,6 +13,7 @@ from app.api.routes.episodes import episodes_router, podcast_episodes_router
 from app.api.routes.podcasts import router as podcasts_router
 from app.api.routes.scripts import router as scripts_router
 from app.api.routes.voices import router as voices_router
+from app.api.routes.mixer import router as mixer_router
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ app.include_router(scripts_router)
 app.include_router(voices_router)
 app.include_router(audio_router)
 app.include_router(ai_router)
+app.include_router(mixer_router)
 
 # Mount static files for serving rendered audio
 media_dir = "/app/media"

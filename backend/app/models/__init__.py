@@ -4,6 +4,7 @@ from app.models.podcast import Podcast
 from app.models.script import Script, ScriptRevision
 from app.models.user import User
 from app.models.voice import VoiceProfile
+from app.models.audio_project import AudioProject
 
 __all__ = [
     "Base",
@@ -14,4 +15,5 @@ __all__ = [
     "Script",
     "ScriptRevision",
     "VoiceProfile",
+    "AudioProject",
 ]
