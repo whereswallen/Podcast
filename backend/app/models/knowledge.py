@@ -16,7 +16,7 @@ class KnowledgeEntry(TimestampMixin, Base):
     )
     entry_type = Column(String(30), nullable=False)
     # Types: episode_summary, topic, guest, segment_template,
-    #        source_material, key_fact, note, business_context
+    #        source_material, key_fact, note, business_context, listener_feedback
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=True)
     tags = Column(JSON, nullable=True, default=list)

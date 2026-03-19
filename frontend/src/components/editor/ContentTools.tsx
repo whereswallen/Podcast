@@ -18,6 +18,8 @@ import {
   RotateCcw,
   ShieldAlert,
   ShieldCheck,
+  ImageIcon,
+  Download,
 } from "lucide-react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -29,6 +31,7 @@ import type {
   FactCheckItem,
   FactCheckSummary,
   ContentSuggestion,
+  VisualCards,
 } from "@/types";
 
 interface ContentToolsProps {
@@ -36,7 +39,7 @@ interface ContentToolsProps {
   podcastId?: string;
 }
 
-type ToolSection = "show-notes" | "transcript" | "seo" | "fact-check" | "suggestions" | "translate" | null;
+type ToolSection = "show-notes" | "transcript" | "seo" | "visual-cards" | "fact-check" | "suggestions" | "translate" | null;
 
 const LANGUAGES = [
   { code: "es", name: "Spanish" },
@@ -64,6 +67,7 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
   const [factCheckSummary, setFactCheckSummary] = useState<FactCheckSummary | null>(null);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[] | null>(null);
+  const [visualCards, setVisualCards] = useState<VisualCards | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolveNote, setResolveNote] = useState("");
 
@@ -95,6 +99,11 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
         case "seo": {
           const res = await api.post<SEOMetadata>(`/api/ai/episodes/${episodeId}/seo`);
           setSeoData(res.data);
+          break;
+        }
+        case "visual-cards": {
+          const res = await api.post<VisualCards>(`/api/ai/episodes/${episodeId}/visual-cards`);
+          setVisualCards(res.data);
           break;
         }
         case "fact-check": {
@@ -130,6 +139,7 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
     { id: "show-notes" as const, label: "Show Notes", icon: FileText, description: "Timestamps, takeaways, quotes" },
     { id: "transcript" as const, label: "Transcript", icon: FileText, description: "Formatted with timestamps" },
     { id: "seo" as const, label: "SEO & Social", icon: Share2, description: "Metadata + social posts" },
+    { id: "visual-cards" as const, label: "Visual Cards", icon: ImageIcon, description: "Quote & topic cards" },
     { id: "fact-check" as const, label: "Fact Check", icon: AlertTriangle, description: "Flag claims to verify" },
     { id: "suggestions" as const, label: "Topic Ideas", icon: Lightbulb, description: "Next episode suggestions" },
   ];
@@ -164,6 +174,7 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
                     (tool.id === "show-notes" && showNotes) ||
                     (tool.id === "transcript" && transcript) ||
                     (tool.id === "seo" && seoData) ||
+                    (tool.id === "visual-cards" && visualCards) ||
                     (tool.id === "fact-check" && factCheckSummary) ||
                     (tool.id === "suggestions" && suggestions);
                   if (!hasData) runTool(tool.id);
@@ -300,6 +311,43 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
                             </button>
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Visual Cards */}
+                    {tool.id === "visual-cards" && visualCards && (
+                      <div className="space-y-3">
+                        <p className="text-[hsl(var(--muted-foreground))]">
+                          &ldquo;{visualCards.best_quote}&rdquo;
+                        </p>
+                        {[
+                          { label: "Quote Card (1080×1080)", data: visualCards.quote_card, key: "quote" },
+                          { label: "Topic Card (1200×628)", data: visualCards.topic_card, key: "topic" },
+                          { label: "Audiogram (1080×1080)", data: visualCards.audiogram_preview, key: "audiogram" },
+                        ].map((card) => (
+                          <div key={card.key} className="space-y-1">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium">{card.label}</p>
+                              <button
+                                onClick={() => {
+                                  const link = document.createElement("a");
+                                  link.href = `data:image/png;base64,${card.data}`;
+                                  link.download = `${card.key}-card.png`;
+                                  link.click();
+                                }}
+                                className="flex items-center gap-1 text-primary-600 hover:underline"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download
+                              </button>
+                            </div>
+                            <img
+                              src={`data:image/png;base64,${card.data}`}
+                              alt={card.label}
+                              className="w-full rounded-md border border-[hsl(var(--border))]"
+                            />
+                          </div>
+                        ))}
                       </div>
                     )}
 

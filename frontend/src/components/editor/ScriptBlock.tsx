@@ -7,6 +7,7 @@ import {
   ChevronUp,
   ChevronDown,
   Wand2,
+  Activity,
 } from "lucide-react";
 import { cn, countWords } from "@/lib/utils";
 import type { ScriptBlock as ScriptBlockType, VoiceProfile } from "@/types";
@@ -58,6 +59,13 @@ export function ScriptBlock({
   const allSpeakers = Array.from(
     new Set([...speakers, "Host", "Guest", "Narrator", "Interviewer"])
   );
+
+  const moodColorMap: Record<string, string> = {
+    energetic: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    serious: "bg-slate-100 text-slate-700 dark:bg-slate-800/50 dark:text-slate-400",
+    dramatic: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    warm: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400",
+  };
 
   const wordCount = countWords(block.text);
   const timingSeconds = Math.round((wordCount / 150) * 60);
@@ -153,6 +161,14 @@ export function ScriptBlock({
                   </option>
                 ))}
               </select>
+            )}
+            {block.voice_overrides?.mood_label && (
+              <div className="flex items-center gap-1">
+                <Activity className="w-3 h-3 text-purple-500" />
+                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${moodColorMap[block.voice_overrides.mood_label] || "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"}`}>
+                  {block.voice_overrides.mood_label}
+                </span>
+              </div>
             )}
             <div className="ml-auto flex items-center gap-1">
               <button

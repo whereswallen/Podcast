@@ -341,6 +341,42 @@ Output ONLY a JSON array of the translated blocks. No markdown, no code fences."
 
         return json.loads(response_text)
 
+    async def extract_visual_content(
+        self, episode_title: str, script_blocks: list[dict]
+    ) -> dict:
+        """Extract the best quote and key takeaways for visual card generation."""
+        script_text = self._extract_script_text(script_blocks)
+
+        prompt = f"""Analyze this podcast episode and extract content for social media visuals.
+
+Episode Title: {episode_title}
+
+Script:
+{script_text[:10000]}
+
+Generate a JSON object with:
+- "best_quote": The single most impactful, shareable quote from the episode (exact words from the script, 10-30 words). Choose something thought-provoking or memorable.
+- "takeaways": Array of 3-5 key takeaway bullet points (each under 80 characters)
+- "audiogram_quote": A second compelling quote, different from best_quote (10-25 words). Choose something that would make someone want to listen.
+
+Output ONLY valid JSON. No markdown, no code fences."""
+
+        message = await self.client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            system="You are a social media content strategist for podcasts. Extract the most shareable, engaging content. Output only valid JSON.",
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        response_text = message.content[0].text.strip()
+        if response_text.startswith("```"):
+            lines = response_text.split("\n")[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            response_text = "\n".join(lines)
+
+        return json.loads(response_text)
+
     def get_supported_languages(self) -> dict:
         """Return supported languages for translation."""
         return SUPPORTED_LANGUAGES

@@ -25,7 +25,12 @@ Each block must have these fields:
 - "speaker_name": the display name of the speaker
 - "text": the actual spoken text for this block
 - "stage_direction": optional stage direction or tone note (e.g., "[enthusiastic]", "[thoughtful pause]"), or null
-- "voice_overrides": null
+- "voice_overrides": an object with optional "speed", "pitch", and "mood_label" adjustments for this block, OR null if the block should use the default voice. Use voice_overrides to reflect the emotional arc of the content:
+  - Exciting/energetic sections: {"speed": 1.1, "pitch": 0.1, "mood_label": "energetic"}
+  - Serious/somber topics: {"speed": 0.9, "pitch": -0.1, "mood_label": "serious"}
+  - Dramatic reveals or pauses: {"speed": 0.85, "pitch": -0.05, "mood_label": "dramatic"}
+  - Warm/empathetic moments: {"speed": 0.95, "pitch": 0.05, "mood_label": "warm"}
+  - Only set voice_overrides on blocks where a mood SHIFT occurs relative to the previous block. Most blocks should remain null. Aim for 3-6 mood shifts per episode
 
 Guidelines:
 - Write naturally as people actually speak — use contractions, conversational language
@@ -99,7 +104,13 @@ def _build_knowledge_prompt_section(knowledge_context: dict) -> str:
         for bullet in recurring[:15]:
             parts.append(f"- {bullet}")
 
-    if not never and not brief and not recurring:
+    feedback = knowledge_context.get("listener_feedback", [])
+    if feedback:
+        parts.append("\n### LISTENER FEEDBACK (address these questions/comments from your audience in this episode — weave answers naturally into the discussion or as a dedicated listener Q&A segment):")
+        for bullet in feedback[:10]:
+            parts.append(f"- {bullet}")
+
+    if not never and not brief and not recurring and not feedback:
         parts.append("\nNo previous episodes yet — this is the first episode.")
 
     return "\n".join(parts)

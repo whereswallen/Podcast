@@ -103,6 +103,15 @@ CastNode's voice engine gives every podcast a unique sonic identity.
 - Assign default voices by role (host, co-host, narrator, guest) in Brand Profile
 - Override voice settings on individual script blocks for emphasis or character shifts
 
+**Voice Mood Shift (Per-Block Voice Evolution):**
+- The AI automatically varies speed and pitch across script blocks to match the emotional arc of the content
+- Mood shifts are generated during script creation — no manual configuration required
+- Mood labels: `energetic` (faster, higher pitch), `serious` (slower, lower pitch), `dramatic` (slow, subtle), `warm` (slight warmth)
+- Typically 3-6 mood shifts per episode to prevent a flat, robotic delivery over long runs
+- Visual mood badges appear in the script editor (color-coded: amber for energetic, slate for serious, purple for dramatic, rose for warm)
+- During TTS rendering, `voice_overrides` on each block are merged with the speaker's base voice profile
+- Keeps podcasts feeling dynamic and human across 50+ episodes without manual voice tuning
+
 ---
 
 ### 4. Audio Production Studio
@@ -170,6 +179,13 @@ A per-podcast knowledge base that makes your AI smarter over time.
 | `key_fact` | Important data points to reference or avoid |
 | `note` | Free-form context for the AI |
 | `business_context` | Sponsorship, partnership, or business constraints |
+| `listener_feedback` | Audience questions and comments to address in the next episode |
+
+**Listener Feedback Loop:**
+- Users paste listener comments, questions, or topic requests as `listener_feedback` entries
+- During script generation, the AI receives a dedicated prompt section: "LISTENER FEEDBACK — address these questions from your audience"
+- Feedback is woven naturally into the episode — as a dedicated Q&A segment or integrated into relevant topic discussion
+- After the feedback is addressed, entries default to "never" revisit to avoid repetition
 
 **Revisit Controls:**
 - **Never** — don't repeat this topic (the AI actively avoids it)
@@ -196,6 +212,23 @@ One-click AI tools that generate everything around the episode.
 | **Content Suggestions** | AI-generated topic ideas based on podcast history and trends | 3 |
 | **Translation** | Full script translation into 8 major languages | 8 |
 | **Inline Rewrite** | Rewrite highlighted text with AI assistance | 2 |
+| **Visual Cards** | Branded quote card, topic card, and audiogram preview images for social media (see Visual Micro Content below) | 3 |
+
+#### Visual Micro Content (Social Media Cards)
+
+AI-powered visual content generation for podcast promotion. Generates three branded card types per episode using the podcast's brand colors:
+
+**Card Types:**
+- **Quote Card** (1080x1080) — Instagram-ready square with the episode's most impactful quote on a branded gradient background
+- **Topic Card** (1200x628) — Twitter/LinkedIn landscape card with episode title and 3-5 key takeaway bullets
+- **Audiogram Preview** (1080x1080) — Simulated waveform visualization with a compelling quote overlay, designed to make listeners hit play
+
+**How it works:**
+1. AI (Claude) analyzes the script and extracts the most shareable quote and key takeaways
+2. Pillow renders three PNG images using the podcast's brand colors from the Brand Profile
+3. Cards are returned as downloadable images ready for social media posting
+
+**Integration:** Available in the Content Tools panel alongside Show Notes, SEO, and Fact-Check. One click generates all three cards.
 
 #### Hallucination Safeguards (Fact-Check System)
 
@@ -332,11 +365,11 @@ Docker Compose with 6 services: PostgreSQL 16, Redis 7, MinIO, FastAPI (Uvicorn)
 
 | Metric | Count |
 |--------|-------|
-| Total source files | 141 |
-| Backend Python files | 65 |
+| Total source files | 143 |
+| Backend Python files | 67 |
 | Frontend TypeScript/TSX files | 76 |
 | API route modules | 17 |
-| API endpoints | 63+ |
+| API endpoints | 64+ |
 | Database models | 13 |
 | Frontend pages | 17 |
 | UI components | 42 |
@@ -403,3 +436,6 @@ Traditional podcast tools (Riverside, Descript, Anchor) assume you already have 
 - Voice cloning with built-in consent verification
 - Full audio mixing studio, not just raw TTS output
 - **Hallucination safeguards** — domain-aware fact-checking with publish gates, confidence scoring, and mandatory verification attestation for regulated content (legal, medical, financial)
+- **Listener feedback loop** — audience questions are ingested into the knowledge base and automatically addressed by the AI in the next episode
+- **Visual micro content** — AI-generated branded social media cards (quote cards, topic cards, audiogram previews) ready for Instagram, Twitter, and LinkedIn
+- **Voice mood shift** — AI automatically varies speed and pitch per block to match emotional arc, preventing robotic monotony over long episode runs

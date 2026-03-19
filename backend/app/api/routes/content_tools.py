@@ -98,6 +98,14 @@ class ContentSuggestion(BaseModel):
     connects_to: str
 
 
+class VisualCardsResponse(BaseModel):
+    quote_card: str  # base64 PNG
+    topic_card: str  # base64 PNG
+    audiogram_preview: str  # base64 PNG
+    best_quote: str
+    takeaways: list[str]
+
+
 class TranslateRequest(BaseModel):
     target_language: str  # ISO 639-1 code
 
@@ -207,6 +215,49 @@ async def generate_seo_metadata(
     )
     deduction.commit(db, description=f"SEO metadata for '{episode.title}'", episode_id=episode_id)
     return SEOMetadataResponse(**result)
+
+
+@router.post("/episodes/{episode_id}/visual-cards", response_model=VisualCardsResponse)
+async def generate_visual_cards(
+    episode_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    deduction: CreditDeduction = Depends(require_credits(3, "visual_cards")),
+) -> VisualCardsResponse:
+    """Generate branded social media cards (quote, topic, audiogram) for an episode."""
+    import base64
+
+    from app.services.image.card_generator import CardGenerator
+
+    episode, script = _get_episode_with_script(episode_id, current_user, db)
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+    brand, _, _ = _get_brand_context(podcast.id, db)
+
+    brand_colors = brand.brand_colors if brand and brand.brand_colors else None
+    show_name = (brand.show_name if brand and brand.show_name else podcast.title) or "CastNode"
+
+    tools = ContentTools()
+    visual = await tools.extract_visual_content(
+        episode_title=episode.title,
+        script_blocks=script.content,
+    )
+    deduction.commit(db, description=f"Visual cards for '{episode.title}'", episode_id=episode_id)
+
+    generator = CardGenerator(brand_colors=brand_colors, show_name=show_name)
+
+    quote_card_bytes = generator.generate_quote_card(visual["best_quote"], episode.title)
+    topic_card_bytes = generator.generate_topic_card(episode.title, visual["takeaways"])
+    audiogram_bytes = generator.generate_audiogram_preview(
+        visual.get("audiogram_quote", visual["best_quote"]), episode.title
+    )
+
+    return VisualCardsResponse(
+        quote_card=base64.b64encode(quote_card_bytes).decode(),
+        topic_card=base64.b64encode(topic_card_bytes).decode(),
+        audiogram_preview=base64.b64encode(audiogram_bytes).decode(),
+        best_quote=visual["best_quote"],
+        takeaways=visual["takeaways"],
+    )
 
 
 @router.post("/episodes/{episode_id}/fact-check", response_model=FactCheckSummary)

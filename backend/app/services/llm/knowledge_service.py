@@ -135,13 +135,17 @@ Output ONLY a JSON array. No markdown, no code fences."""
         never_repeat: list[str] = []
         brief_recap: list[str] = []
         recurring: list[str] = []
+        listener_feedback: list[str] = []
 
         for entry in entries:
             bullet = entry.title
             if entry.content:
                 bullet += f" — {entry.content[:200]}"
 
-            if entry.revisit == "never":
+            # Listener feedback gets its own bucket regardless of revisit level
+            if entry.entry_type == "listener_feedback":
+                listener_feedback.append(bullet)
+            elif entry.revisit == "never":
                 never_repeat.append(bullet)
             elif entry.revisit == "brief":
                 brief_recap.append(bullet)
@@ -152,5 +156,6 @@ Output ONLY a JSON array. No markdown, no code fences."""
             "never_repeat": never_repeat,
             "brief_recap": brief_recap,
             "recurring": recurring,
+            "listener_feedback": listener_feedback,
             "total_entries": len(entries),
         }

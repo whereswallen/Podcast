@@ -13,6 +13,7 @@ import {
   FileText,
   Lightbulb,
   Building,
+  MessageSquare,
 } from "lucide-react";
 import { useKnowledgeStore } from "@/stores/knowledge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ const ENTRY_TYPE_OPTIONS = [
   { value: "note", label: "Notes" },
   { value: "business_context", label: "Business Context" },
   { value: "source_material", label: "Source Material" },
+  { value: "listener_feedback", label: "Listener Feedback" },
 ];
 
 const REVISIT_OPTIONS = [
@@ -48,6 +50,7 @@ const TYPE_ICONS: Record<string, typeof BookOpen> = {
   note: FileText,
   business_context: Building,
   source_material: FileText,
+  listener_feedback: MessageSquare,
 };
 
 const REVISIT_BADGE_VARIANT: Record<string, "default" | "secondary" | "warning" | "success"> = {
@@ -306,6 +309,7 @@ export function KnowledgeList({ podcastId }: KnowledgeListProps) {
                 setNewEntry({
                   ...newEntry,
                   entry_type: value as KnowledgeEntryType,
+                  revisit: value === "listener_feedback" ? "never" : newEntry.revisit,
                 })
               }
             />

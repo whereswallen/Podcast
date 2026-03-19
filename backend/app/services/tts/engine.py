@@ -396,6 +396,16 @@ class TTSEngine:
             # Get voice profile for this speaker, or use default
             voice_profile = voice_assignments.get(speaker_name, {"speed": 1.0, "pitch": 0.0})
 
+            # Merge per-block voice_overrides (mood shift) with the base profile
+            overrides = block.get("voice_overrides")
+            if overrides and isinstance(overrides, dict):
+                merged = dict(voice_profile.get("settings", voice_profile))
+                if "speed" in overrides:
+                    merged["speed"] = float(overrides["speed"])
+                if "pitch" in overrides:
+                    merged["pitch"] = float(overrides["pitch"])
+                voice_profile = {"settings": merged}
+
             # Synthesize this block
             audio_bytes = self.synthesize(text, voice_profile)
 

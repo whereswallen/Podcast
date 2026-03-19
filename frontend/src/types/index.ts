@@ -121,6 +121,19 @@ export interface ScriptBlock {
   text: string;
   stage_direction?: string;
   voice_id?: string;
+  voice_overrides?: {
+    speed?: number;
+    pitch?: number;
+    mood_label?: string;
+  } | null;
+}
+
+export interface VisualCards {
+  quote_card: string;
+  topic_card: string;
+  audiogram_preview: string;
+  best_quote: string;
+  takeaways: string[];
 }
 
 export interface Script {
@@ -347,7 +360,8 @@ export type KnowledgeEntryType =
   | "source_material"
   | "key_fact"
   | "note"
-  | "business_context";
+  | "business_context"
+  | "listener_feedback";
 
 export type RevisitLevel = "never" | "brief" | "recurring";
 
@@ -380,6 +394,7 @@ export interface KnowledgeContext {
   never_repeat: string[];
   brief_recap: string[];
   recurring: string[];
+  listener_feedback: string[];
   total_entries: number;
 }
 
