@@ -9,6 +9,7 @@ import {
   Clock,
   Calendar,
   Pencil,
+  Palette,
 } from "lucide-react";
 import api from "@/lib/api";
 import { formatDate, formatDuration } from "@/lib/utils";
@@ -131,6 +132,12 @@ export default function PodcastDetailPage() {
         title={podcast?.title || "Podcast"}
         description={podcast?.description || ""}
       >
+        <Link href={`/brand/${podcastId}`}>
+          <Button variant="outline" size="sm">
+            <Palette className="w-4 h-4" />
+            Brand & Knowledge
+          </Button>
+        </Link>
         <Button variant="outline" size="sm">
           <Pencil className="w-4 h-4" />
           Edit

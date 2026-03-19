@@ -206,6 +206,13 @@ def render_episode_audio(self, episode_id: str) -> dict:
         self.update_state(state="PROGRESS", meta={"step": "complete", "progress": 100})
 
         logger.info(f"Audio render complete for episode {episode_id}")
+
+        # Auto-summarize episode into knowledge base
+        try:
+            auto_summarize_knowledge.delay(str(episode.podcast_id), episode_id)
+        except Exception as e:
+            logger.warning(f"Failed to queue knowledge auto-summarize for episode {episode_id}: {e}")
+
         return {
             "status": "complete",
             "episode_id": episode_id,
@@ -221,6 +228,28 @@ def render_episode_audio(self, episode_id: str) -> dict:
                 db.commit()
         except Exception:
             pass
+        return {"status": "error", "message": str(e)}
+    finally:
+        db.close()
+
+
+@celery_app.task(bind=True, name="auto_summarize_knowledge")
+def auto_summarize_knowledge(self, podcast_id: str, episode_id: str) -> dict:
+    """Auto-generate knowledge base entries from an episode's script after render."""
+    import asyncio
+    from app.services.llm.knowledge_service import KnowledgeService
+
+    logger.info(f"Auto-summarizing episode {episode_id} into knowledge base")
+    db = SessionLocal()
+    try:
+        service = KnowledgeService()
+        entries = asyncio.get_event_loop().run_until_complete(
+            service.auto_summarize_episode(podcast_id, episode_id, db)
+        )
+        logger.info(f"Created {len(entries)} knowledge entries for episode {episode_id}")
+        return {"status": "complete", "entries_created": len(entries)}
+    except Exception as e:
+        logger.exception(f"Error auto-summarizing episode {episode_id}: {e}")
         return {"status": "error", "message": str(e)}
     finally:
         db.close()

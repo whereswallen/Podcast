@@ -243,3 +243,112 @@ export interface SFXItem {
   category: string;
   duration_ms: number;
 }
+
+// ---- Brand Profile ----
+export interface BrandProfile {
+  id: string;
+  podcast_id: string;
+  show_name?: string;
+  tagline?: string;
+  personality?: string;
+  target_audience?: string;
+  tone_guidelines?: { do: string[]; dont: string[] };
+  key_themes?: string[];
+  vocabulary?: string[];
+  content_rules?: string;
+  default_voice_assignments?: Record<string, string>;
+  default_music_id?: string;
+  default_sfx_ids?: string[];
+  brand_colors?: { primary?: string; secondary?: string };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BrandProfileUpdate {
+  show_name?: string;
+  tagline?: string;
+  personality?: string;
+  target_audience?: string;
+  tone_guidelines?: { do: string[]; dont: string[] };
+  key_themes?: string[];
+  vocabulary?: string[];
+  content_rules?: string;
+  default_voice_assignments?: Record<string, string>;
+  default_music_id?: string;
+  default_sfx_ids?: string[];
+  brand_colors?: { primary?: string; secondary?: string };
+}
+
+// ---- Intro/Outro Templates ----
+export interface IntroOutroTemplate {
+  id: string;
+  podcast_id: string;
+  type: "intro" | "outro";
+  name: string;
+  script_template: string;
+  speaker_id?: string;
+  voice_id?: string;
+  music_id?: string;
+  sfx_id?: string;
+  duration_target?: number;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IntroOutroCreateRequest {
+  type: "intro" | "outro";
+  name: string;
+  script_template: string;
+  speaker_id?: string;
+  voice_id?: string;
+  music_id?: string;
+  sfx_id?: string;
+  duration_target?: number;
+  is_default?: boolean;
+}
+
+// ---- Knowledge Base ----
+export type KnowledgeEntryType =
+  | "episode_summary"
+  | "topic"
+  | "guest"
+  | "segment_template"
+  | "source_material"
+  | "key_fact"
+  | "note"
+  | "business_context";
+
+export type RevisitLevel = "never" | "brief" | "recurring";
+
+export interface KnowledgeEntry {
+  id: string;
+  podcast_id: string;
+  episode_id?: string;
+  entry_type: KnowledgeEntryType;
+  title: string;
+  content?: string;
+  tags?: string[];
+  metadata_?: Record<string, unknown>;
+  revisit: RevisitLevel;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KnowledgeEntryCreateRequest {
+  entry_type: KnowledgeEntryType;
+  title: string;
+  content?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  revisit?: RevisitLevel;
+  episode_id?: string;
+}
+
+export interface KnowledgeContext {
+  never_repeat: string[];
+  brief_recap: string[];
+  recurring: string[];
+  total_entries: number;
+}

@@ -39,6 +39,72 @@ Guidelines:
 Output ONLY the JSON array. No markdown, no code fences, no explanation."""
 
 
+def _build_brand_prompt_section(brand_profile: dict) -> str:
+    """Build the brand guidelines section for the system prompt."""
+    parts = ["\n## Brand Guidelines"]
+
+    if brand_profile.get("show_name"):
+        line = f"Show: {brand_profile['show_name']}"
+        if brand_profile.get("tagline"):
+            line += f' — "{brand_profile["tagline"]}"'
+        parts.append(line)
+
+    if brand_profile.get("personality"):
+        parts.append(f"Personality: {brand_profile['personality']}")
+
+    if brand_profile.get("target_audience"):
+        parts.append(f"Audience: {brand_profile['target_audience']}")
+
+    tone = brand_profile.get("tone_guidelines")
+    if tone:
+        do_list = ", ".join(tone.get("do", []))
+        dont_list = ", ".join(tone.get("dont", []))
+        if do_list:
+            parts.append(f"Tone DO: {do_list}")
+        if dont_list:
+            parts.append(f"Tone DON'T: {dont_list}")
+
+    if brand_profile.get("key_themes"):
+        parts.append(f"Key Themes: {', '.join(brand_profile['key_themes'])}")
+
+    if brand_profile.get("vocabulary"):
+        parts.append(f"Preferred Vocabulary: {', '.join(brand_profile['vocabulary'])}")
+
+    if brand_profile.get("content_rules"):
+        parts.append(f"Content Rules: {brand_profile['content_rules']}")
+
+    return "\n".join(parts)
+
+
+def _build_knowledge_prompt_section(knowledge_context: dict) -> str:
+    """Build the knowledge context section for the system prompt."""
+    parts = ["\n## PREVIOUS EPISODE KNOWLEDGE"]
+
+    never = knowledge_context.get("never_repeat", [])
+    brief = knowledge_context.get("brief_recap", [])
+    recurring = knowledge_context.get("recurring", [])
+
+    if never:
+        parts.append("\n### DO NOT REPEAT (fully covered — skip or at most reference by name):")
+        for bullet in never[:30]:  # Cap at 30 to stay within token budget
+            parts.append(f"- {bullet}")
+
+    if brief:
+        parts.append("\n### BRIEF RECAP OK (touch on quickly if relevant, don't deep-dive):")
+        for bullet in brief[:20]:
+            parts.append(f"- {bullet}")
+
+    if recurring:
+        parts.append("\n### RECURRING / ALWAYS RELEVANT (core themes — weave in naturally):")
+        for bullet in recurring[:15]:
+            parts.append(f"- {bullet}")
+
+    if not never and not brief and not recurring:
+        parts.append("\nNo previous episodes yet — this is the first episode.")
+
+    return "\n".join(parts)
+
+
 class ScriptGenerator:
     def __init__(self) -> None:
         self.client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
@@ -50,9 +116,29 @@ class ScriptGenerator:
         tone: str = "conversational",
         target_duration: int = 300,
         source_material: str | None = None,
+        brand_profile: dict | None = None,
+        knowledge_context: dict | None = None,
+        intro_template: str | None = None,
+        outro_template: str | None = None,
     ) -> list[ScriptBlockSchema]:
         speakers = FORMAT_SPEAKER_MAP.get(format, ["Host"])
         target_words = int((target_duration / 60) * 150)
+
+        # Build enhanced system prompt
+        system_prompt = SYSTEM_PROMPT
+
+        if brand_profile:
+            system_prompt += _build_brand_prompt_section(brand_profile)
+
+        if knowledge_context:
+            system_prompt += _build_knowledge_prompt_section(knowledge_context)
+
+        if intro_template or outro_template:
+            system_prompt += "\n\n## Required Structure"
+            if intro_template:
+                system_prompt += f"\nThe script MUST start with this intro (adapt variables as needed): {intro_template}"
+            if outro_template:
+                system_prompt += f"\nThe script MUST end with this outro (adapt variables as needed): {outro_template}"
 
         user_prompt = f"""Write a podcast script about: {topic}
 
@@ -69,7 +155,7 @@ Speakers: {', '.join(speakers)}
         message = await self.client.messages.create(
             model="claude-sonnet-4-20250514",
             max_tokens=4096,
-            system=SYSTEM_PROMPT,
+            system=system_prompt,
             messages=[{"role": "user", "content": user_prompt}],
         )
 

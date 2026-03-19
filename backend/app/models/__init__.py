@@ -5,6 +5,9 @@ from app.models.script import Script, ScriptRevision
 from app.models.user import User
 from app.models.voice import VoiceProfile
 from app.models.audio_project import AudioProject
+from app.models.brand import BrandProfile
+from app.models.intro_outro import IntroOutroTemplate
+from app.models.knowledge import KnowledgeEntry
 
 __all__ = [
     "Base",
@@ -16,4 +19,7 @@ __all__ = [
     "ScriptRevision",
     "VoiceProfile",
     "AudioProject",
+    "BrandProfile",
+    "IntroOutroTemplate",
+    "KnowledgeEntry",
 ]

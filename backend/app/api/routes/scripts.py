@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.models.brand import BrandProfile
 from app.models.episode import Episode
+from app.models.intro_outro import IntroOutroTemplate
 from app.models.podcast import Podcast
 from app.models.script import Script, ScriptRevision
 from app.models.user import User
@@ -16,6 +18,7 @@ from app.schemas.script import (
     ScriptRevisionResponse,
     ScriptUpdate,
 )
+from app.services.llm.knowledge_service import KnowledgeService
 from app.services.llm.script_generator import ScriptGenerator
 
 router = APIRouter(prefix="/api/episodes/{episode_id}/script", tags=["scripts"])
@@ -95,6 +98,55 @@ async def generate_script(
 ) -> ScriptResponse:
     script = _get_script_for_episode(episode_id, current_user, db)
 
+    # Auto-fetch brand profile for the podcast
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+    brand_dict = None
+    brand = db.query(BrandProfile).filter(BrandProfile.podcast_id == episode.podcast_id).first()
+    if brand:
+        brand_dict = {
+            "show_name": brand.show_name,
+            "tagline": brand.tagline,
+            "personality": brand.personality,
+            "target_audience": brand.target_audience,
+            "tone_guidelines": brand.tone_guidelines,
+            "key_themes": brand.key_themes,
+            "vocabulary": brand.vocabulary,
+            "content_rules": brand.content_rules,
+        }
+
+    # Auto-fetch knowledge context (MANDATORY — prevents content repetition)
+    knowledge_svc = KnowledgeService()
+    knowledge_context = knowledge_svc.get_context_for_generation(
+        episode.podcast_id, db, topic=payload.topic
+    )
+
+    # Auto-fetch default intro/outro templates
+    intro_text = None
+    outro_text = None
+    default_intro = (
+        db.query(IntroOutroTemplate)
+        .filter(
+            IntroOutroTemplate.podcast_id == episode.podcast_id,
+            IntroOutroTemplate.type == "intro",
+            IntroOutroTemplate.is_default.is_(True),
+        )
+        .first()
+    )
+    if default_intro:
+        intro_text = default_intro.script_template
+
+    default_outro = (
+        db.query(IntroOutroTemplate)
+        .filter(
+            IntroOutroTemplate.podcast_id == episode.podcast_id,
+            IntroOutroTemplate.type == "outro",
+            IntroOutroTemplate.is_default.is_(True),
+        )
+        .first()
+    )
+    if default_outro:
+        outro_text = default_outro.script_template
+
     generator = ScriptGenerator()
     blocks = await generator.generate_script(
         topic=payload.topic,
@@ -102,6 +154,10 @@ async def generate_script(
         tone=payload.tone,
         target_duration=payload.target_duration,
         source_material=payload.source_material,
+        brand_profile=brand_dict,
+        knowledge_context=knowledge_context,
+        intro_template=intro_text,
+        outro_template=outro_text,
     )
 
     # Save current content as revision if it has content

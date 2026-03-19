@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Sparkles,
   BookOpen,
   BookMarked,
   ArrowRightLeft,
   Loader2,
+  Brain,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useEditorStore } from "@/stores/editor";
+import { useKnowledgeStore } from "@/stores/knowledge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
@@ -40,6 +42,7 @@ const toneOptions = [
 
 interface GeneratePanelProps {
   episodeId: string;
+  podcastId?: string;
 }
 
 let quickActionBlockId = 1;
@@ -47,11 +50,18 @@ function generateQuickBlockId(): string {
   return `quick_block_${Date.now()}_${quickActionBlockId++}`;
 }
 
-export function GeneratePanel({ episodeId }: GeneratePanelProps) {
+export function GeneratePanel({ episodeId, podcastId }: GeneratePanelProps) {
   const { setScript, blocks, updateBlock } = useEditorStore();
+  const { context, loadContext } = useKnowledgeStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (podcastId) {
+      loadContext(podcastId);
+    }
+  }, [podcastId, loadContext]);
   const [formData, setFormData] = useState<GenerateScriptRequest>({
     topic: "",
     format: "conversation",
@@ -259,6 +269,24 @@ export function GeneratePanel({ episodeId }: GeneratePanelProps) {
         rows={3}
         className="text-sm"
       />
+
+      {/* Knowledge context indicator */}
+      {context && context.total_entries > 0 && (
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-primary-50/50 dark:bg-primary-950/20 border border-primary-200 dark:border-primary-800">
+          <Brain className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-xs font-medium text-primary-700 dark:text-primary-300">
+              Analyzing {context.total_entries} knowledge{" "}
+              {context.total_entries === 1 ? "entry" : "entries"}
+            </p>
+            <p className="text-[10px] text-primary-600/70 dark:text-primary-400/70">
+              {context.never_repeat.length} topics to avoid repeating
+              {context.recurring.length > 0 &&
+                ` · ${context.recurring.length} recurring themes`}
+            </p>
+          </div>
+        </div>
+      )}
 
       <Button
         onClick={handleGenerate}
