@@ -16,6 +16,8 @@ class User(TimestampMixin, Base):
     is_admin = Column(Boolean, default=False, nullable=False)
     auth_provider = Column(String(20), nullable=False, default="email")  # email/google/github
     provider_id = Column(String(255), nullable=True)  # OAuth provider's user ID
+    stripe_customer_id = Column(String(255), nullable=True)  # Stripe customer ID
+    stripe_subscription_id = Column(String(255), nullable=True)  # Active subscription ID
 
     podcasts = relationship("Podcast", back_populates="user", lazy="selectin")
     voice_profiles = relationship("VoiceProfile", back_populates="user", lazy="selectin")

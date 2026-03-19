@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_SECRET: str = ""
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Stripe
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_PRO_PRICE_ID: str = ""
+    STRIPE_ENTERPRISE_PRICE_ID: str = ""
+    STRIPE_CREDITS_100_PRO_PRICE_ID: str = ""
+    STRIPE_CREDITS_100_ENT_PRICE_ID: str = ""
+
     # CORS
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",

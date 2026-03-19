@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Shield, ShieldOff, UserX, UserCheck } from "lucide-react";
+import { Search, Shield, ShieldOff, UserX, UserCheck, Coins } from "lucide-react";
+import { toast } from "sonner";
 import { useAdminStore } from "@/stores/admin";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,7 @@ const providerBadge: Record<string, "default" | "secondary" | "success"> = {
 };
 
 export default function AdminUsersPage() {
-  const { users, isLoading, loadUsers, updateUser } = useAdminStore();
+  const { users, isLoading, loadUsers, updateUser, grantCredits } = useAdminStore();
   const [search, setSearch] = useState("");
   const [planFilter, setPlanFilter] = useState("");
   const [providerFilter, setProviderFilter] = useState("");
@@ -65,6 +66,17 @@ export default function AdminUsersPage() {
 
   const handleChangePlan = async (userId: string, plan: string) => {
     await updateUser(userId, { plan_tier: plan });
+  };
+
+  const handleGrantCredits = async (user: AdminUser) => {
+    const amount = prompt(`Grant credits to ${user.name}.\nEnter amount:`);
+    if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) return;
+    try {
+      await grantCredits(user.id, Number(amount), `Admin grant to ${user.name}`);
+      toast.success(`Granted ${amount} credits to ${user.name}`);
+    } catch {
+      toast.error("Failed to grant credits");
+    }
   };
 
   return (
@@ -191,6 +203,13 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleGrantCredits(user)}
+                          className="p-1.5 rounded hover:bg-[hsl(var(--muted))] transition-colors"
+                          title="Grant credits"
+                        >
+                          <Coins className="w-4 h-4 text-amber-600" />
+                        </button>
                         <button
                           onClick={() => handleToggleAdmin(user)}
                           className="p-1.5 rounded hover:bg-[hsl(var(--muted))] transition-colors"

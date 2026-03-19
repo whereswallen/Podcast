@@ -9,6 +9,7 @@ from app.models.brand import BrandProfile
 from app.models.intro_outro import IntroOutroTemplate
 from app.models.knowledge import KnowledgeEntry
 from app.models.voice_clone import VoiceCloneJob
+from app.models.credit import CreditBalance, CreditTransaction
 
 __all__ = [
     "Base",
@@ -24,4 +25,6 @@ __all__ = [
     "IntroOutroTemplate",
     "KnowledgeEntry",
     "VoiceCloneJob",
+    "CreditBalance",
+    "CreditTransaction",
 ]

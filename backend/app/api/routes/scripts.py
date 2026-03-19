@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.api.middleware.credit_check import CreditDeduction, require_credits
 from app.models.brand import BrandProfile
 from app.models.episode import Episode
 from app.models.intro_outro import IntroOutroTemplate
@@ -95,10 +96,12 @@ async def generate_script(
     payload: GenerateScriptRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    deduction: CreditDeduction = Depends(require_credits(10, "script_generate")),
 ) -> ScriptResponse:
     script = _get_script_for_episode(episode_id, current_user, db)
 
     # Auto-fetch brand profile for the podcast
+    episode = db.query(Episode).filter(Episode.id == episode_id).first()
     podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
     brand_dict = None
     brand = db.query(BrandProfile).filter(BrandProfile.podcast_id == episode.podcast_id).first()
@@ -160,6 +163,9 @@ async def generate_script(
         outro_template=outro_text,
     )
 
+    # Deduct credits after successful generation
+    deduction.commit(db, description=f"Generated script for '{payload.topic}'", episode_id=episode_id)
+
     # Save current content as revision if it has content
     if script.content:
         revision = ScriptRevision(
@@ -193,6 +199,7 @@ async def rewrite_blocks(
     payload: RewriteRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    deduction: CreditDeduction = Depends(require_credits(5, "rewrite_blocks")),
 ) -> ScriptResponse:
     script = _get_script_for_episode(episode_id, current_user, db)
 
@@ -215,6 +222,9 @@ async def rewrite_blocks(
         blocks=blocks_to_rewrite,
         instruction=payload.instruction,
     )
+
+    # Deduct credits after successful rewrite
+    deduction.commit(db, description=f"Rewrote {len(blocks_to_rewrite)} blocks", episode_id=episode_id)
 
     # Save revision
     revision = ScriptRevision(

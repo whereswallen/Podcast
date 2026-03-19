@@ -20,6 +20,8 @@ from app.api.routes.mixer import router as mixer_router
 from app.api.routes.admin import router as admin_router
 from app.api.routes.content_tools import router as content_tools_router
 from app.api.routes.voice_clone import router as voice_clone_router
+from app.api.routes.credits import router as credits_router
+from app.api.routes.billing import router as billing_router
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -64,6 +66,8 @@ app.include_router(brand_router)
 app.include_router(intro_outro_router)
 app.include_router(knowledge_router)
 app.include_router(admin_router)
+app.include_router(credits_router)
+app.include_router(billing_router)
 
 # Mount static files for serving rendered audio
 media_dir = "/app/media"

@@ -11,6 +11,7 @@ interface AdminState {
   loadStats: () => Promise<void>;
   loadUsers: (filters?: { search?: string; plan_tier?: string; provider?: string }) => Promise<void>;
   updateUser: (userId: string, data: { plan_tier?: string; is_active?: boolean; is_admin?: boolean }) => Promise<void>;
+  grantCredits: (userId: string, amount: number, reason?: string) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -62,6 +63,18 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         (err as { response?: { data?: { detail?: string } } })?.response?.data
           ?.detail || "Failed to update user.";
       set({ error: message });
+    }
+  },
+
+  grantCredits: async (userId, amount, reason = "Admin credit grant") => {
+    try {
+      await api.post(`/api/credits/admin/${userId}/grant`, { amount, reason });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to grant credits.";
+      set({ error: message });
+      throw new Error(message);
     }
   },
 }));

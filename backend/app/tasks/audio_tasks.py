@@ -238,14 +238,53 @@ def auto_summarize_knowledge(self, podcast_id: str, episode_id: str) -> dict:
     """Auto-generate knowledge base entries from an episode's script after render."""
     import asyncio
     from app.services.llm.knowledge_service import KnowledgeService
+    from app.services.credit_service import check_credits, deduct_credits
+    from app.models.podcast import Podcast
 
     logger.info(f"Auto-summarizing episode {episode_id} into knowledge base")
     db = SessionLocal()
     try:
+        # Find the podcast owner to check/deduct credits
+        podcast = db.query(Podcast).filter(Podcast.id == podcast_id).first()
+        if not podcast:
+            return {"status": "error", "message": "Podcast not found"}
+
+        from app.models.user import User
+        user = db.query(User).filter(User.id == podcast.user_id).first()
+        if not user:
+            return {"status": "error", "message": "User not found"}
+
+        # Check if user has enough credits (skip silently if not)
+        credit_check = check_credits(user.id, 3, user.plan_tier, db)
+        if not credit_check["allowed"]:
+            logger.info(f"Skipping auto-summarize for episode {episode_id}: {credit_check.get('reason', 'insufficient credits')}")
+            return {"status": "skipped", "reason": credit_check.get("reason")}
+
+        # Check if knowledge entries already exist for this episode (avoid duplicates)
+        from app.models.knowledge import KnowledgeEntry
+        existing = db.query(KnowledgeEntry).filter(
+            KnowledgeEntry.episode_id == episode_id,
+            KnowledgeEntry.is_active.is_(True),
+        ).count()
+        if existing > 0:
+            logger.info(f"Skipping auto-summarize for episode {episode_id}: entries already exist")
+            return {"status": "skipped", "reason": "entries_already_exist"}
+
         service = KnowledgeService()
         entries = asyncio.get_event_loop().run_until_complete(
             service.auto_summarize_episode(podcast_id, episode_id, db)
         )
+
+        # Deduct credits only after successful summarization
+        deduct_credits(
+            user_id=user.id,
+            cost=3,
+            operation="auto_summarize",
+            db=db,
+            episode_id=episode_id,
+            description=f"Auto-summarized episode into {len(entries)} knowledge entries",
+        )
+
         logger.info(f"Created {len(entries)} knowledge entries for episode {episode_id}")
         return {"status": "complete", "entries_created": len(entries)}
     except Exception as e:

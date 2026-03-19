@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/layout/Header";
+import { CreditWarningBanner } from "@/components/credits/CreditWarningBanner";
 import {
   Dialog,
   DialogTrigger,
@@ -88,7 +89,8 @@ export default function DashboardPage() {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
+      <CreditWarningBanner />
       <Header
         title="Your Podcasts"
         description="Manage and create AI-powered podcasts"

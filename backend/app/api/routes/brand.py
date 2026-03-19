@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.api.middleware.credit_check import CreditDeduction, require_credits
 from app.models.brand import BrandProfile
 from app.models.podcast import Podcast
 from app.models.user import User
@@ -67,6 +68,7 @@ async def generate_brand(
     payload: BrandGenerateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    deduction: CreditDeduction = Depends(require_credits(3, "brand_generate")),
 ) -> BrandProfileResponse:
     """AI-generate brand profile suggestions from podcast info."""
     _verify_podcast_ownership(podcast_id, current_user, db)
@@ -107,6 +109,7 @@ Output ONLY valid JSON. No markdown, no code fences."""
         response_text = "\n".join(lines)
 
     brand_data = json.loads(response_text)
+    deduction.commit(db, description=f"AI brand profile for '{payload.podcast_title}'")
 
     brand = db.query(BrandProfile).filter(BrandProfile.podcast_id == podcast_id).first()
     if not brand:

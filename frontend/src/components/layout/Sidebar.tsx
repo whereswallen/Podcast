@@ -13,10 +13,12 @@ import {
   ChevronRight,
   Shield,
   Search,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 import { ThemeToggle } from "./ThemeToggle";
+import { CreditBadge } from "@/components/credits/CreditBadge";
 import { useState } from "react";
 
 const navItems = [
@@ -39,6 +41,11 @@ const navItems = [
     label: "Studio",
     href: "/studio",
     icon: Sliders,
+  },
+  {
+    label: "Billing",
+    href: "/settings/billing",
+    icon: CreditCard,
   },
   {
     label: "Settings",
@@ -150,6 +157,11 @@ export function Sidebar() {
 
       {/* User section */}
       <div className="p-3 border-t border-[hsl(var(--border))]">
+        {/* Credit badge */}
+        <div className="mb-2">
+          <CreditBadge collapsed={collapsed} />
+        </div>
+
         {/* Theme toggle */}
         <div
           className={cn(

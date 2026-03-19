@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth";
+import { useCreditsStore } from "@/stores/credits";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { CommandPalette } from "@/components/layout/CommandPalette";
@@ -10,12 +11,21 @@ import { CommandPalette } from "@/components/layout/CommandPalette";
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, loadFromStorage } = useAuthStore();
+  const { fetchBalance, fetchCosts } = useCreditsStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     loadFromStorage();
     setMounted(true);
   }, [loadFromStorage]);
+
+  // Fetch credit balance and costs when authenticated
+  useEffect(() => {
+    if (mounted && isAuthenticated) {
+      fetchBalance();
+      fetchCosts();
+    }
+  }, [mounted, isAuthenticated, fetchBalance, fetchCosts]);
 
   useEffect(() => {
     if (mounted && !isAuthenticated) {

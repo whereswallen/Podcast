@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.api.middleware.credit_check import CreditDeduction, require_credits
 from app.models.brand import BrandProfile
 from app.models.intro_outro import IntroOutroTemplate
 from app.models.podcast import Podcast
@@ -135,6 +136,7 @@ async def generate_template(
     payload: IntroOutroGenerateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    deduction: CreditDeduction = Depends(require_credits(3, "intro_outro_generate")),
 ) -> IntroOutroResponse:
     """AI-generate an intro or outro template from brand profile."""
     _verify_podcast_ownership(podcast_id, current_user, db)
@@ -170,6 +172,7 @@ Include the variable placeholders in curly braces where they fit naturally."""
     )
 
     generated_text = message.content[0].text.strip()
+    deduction.commit(db, description=f"AI generated {payload.type} template")
 
     template = IntroOutroTemplate(
         podcast_id=podcast_id,

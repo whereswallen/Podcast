@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.api.middleware.credit_check import CreditDeduction, require_credits
 from app.models.user import User
 from app.services.llm.script_generator import ScriptGenerator
 
@@ -25,6 +26,8 @@ class InlineRewriteResponse(BaseModel):
 async def rewrite_inline(
     payload: InlineRewriteRequest,
     current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    deduction: CreditDeduction = Depends(require_credits(2, "rewrite_inline")),
 ) -> InlineRewriteResponse:
     generator = ScriptGenerator()
     result = await generator.rewrite_inline(
@@ -32,4 +35,5 @@ async def rewrite_inline(
         instruction=payload.instruction,
         context=payload.context,
     )
+    deduction.commit(db, description="Inline text rewrite")
     return InlineRewriteResponse(text=result)

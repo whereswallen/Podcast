@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.auth import Token, UserCreate, UserLogin, UserResponse
+from app.services.credit_service import initialize_balance
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -36,6 +37,8 @@ def register(payload: UserCreate, db: Session = Depends(get_db)) -> Token:
     db.add(user)
     db.commit()
     db.refresh(user)
+    # Initialize credit balance for new user
+    initialize_balance(user.id, user.plan_tier, db)
     access_token = create_access_token(data={"sub": str(user.id)})
     return Token(access_token=access_token)
 
@@ -143,6 +146,7 @@ async def google_callback(code: str, db: Session = Depends(get_db)) -> RedirectR
         db.add(user)
         db.commit()
         db.refresh(user)
+        initialize_balance(user.id, user.plan_tier, db)
     else:
         # Update avatar if we got one from Google
         if avatar_url and not user.avatar_url:
@@ -244,6 +248,7 @@ async def github_callback(code: str, db: Session = Depends(get_db)) -> RedirectR
         db.add(user)
         db.commit()
         db.refresh(user)
+        initialize_balance(user.id, user.plan_tier, db)
     else:
         if avatar_url and not user.avatar_url:
             user.avatar_url = avatar_url

@@ -477,3 +477,48 @@ export interface TranslateResponse {
   blocks: Record<string, unknown>[];
   block_count: number;
 }
+
+// ---- Credits ----
+export interface CreditBalance {
+  available_credits: number;
+  monthly_credits: number;
+  monthly_remaining: number;
+  bonus_credits: number;
+  used_this_month: number;
+  used_today: number;
+  daily_cap: number;
+  period_start: string;
+  period_end: string;
+  plan_tier: string;
+}
+
+export interface CreditTransaction {
+  id: string;
+  amount: number;
+  balance_after: number;
+  operation: string;
+  episode_id?: string;
+  description: string;
+  created_at: string;
+}
+
+export interface OperationCost {
+  operation: string;
+  cost: number;
+}
+
+// ---- Billing ----
+export interface PlanInfo {
+  name: string;
+  price: string;
+  monthly_credits: number;
+  features: string[];
+  stripe_price_id: string;
+}
+
+export interface SubscriptionInfo {
+  plan_tier: string;
+  stripe_subscription_id?: string;
+  stripe_customer_id?: string;
+  status: string;
+}
