@@ -288,6 +288,7 @@ export interface BrandProfile {
   default_music_id?: string;
   default_sfx_ids?: string[];
   brand_colors?: { primary?: string; secondary?: string };
+  domain?: "general" | "legal" | "medical" | "financial" | "technical";
   created_at: string;
   updated_at: string;
 }
@@ -305,6 +306,7 @@ export interface BrandProfileUpdate {
   default_music_id?: string;
   default_sfx_ids?: string[];
   brand_colors?: { primary?: string; secondary?: string };
+  domain?: "general" | "legal" | "medical" | "financial" | "technical";
 }
 
 // ---- Intro/Outro Templates ----
@@ -451,11 +453,28 @@ export interface SEOMetadata {
 }
 
 export interface FactCheckItem {
+  id: string;
   block_id?: string;
   claim: string;
   severity: "high" | "medium" | "low";
+  confidence: number;
   suggestion: string;
+  sources: string[];
   context?: string;
+  domain?: string;
+  resolved: boolean;
+  resolved_at?: string;
+  resolution_note?: string;
+}
+
+export interface FactCheckSummary {
+  items: FactCheckItem[];
+  total: number;
+  unresolved_high: number;
+  unresolved_medium: number;
+  unresolved_low: number;
+  publish_blocked: boolean;
+  domain?: string;
 }
 
 export interface ContentSuggestion {

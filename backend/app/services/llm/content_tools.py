@@ -171,29 +171,81 @@ Output ONLY valid JSON. No markdown, no code fences."""
 
         return json.loads(response_text)
 
-    async def fact_check(self, script_blocks: list[dict]) -> list[dict]:
-        """Flag claims in the script that may need fact-checking."""
+    async def fact_check(
+        self,
+        script_blocks: list[dict],
+        domain: str = "general",
+        content_rules: list[str] | None = None,
+        known_facts: list[str] | None = None,
+    ) -> list[dict]:
+        """Flag claims in the script that may need fact-checking.
+
+        Domain-aware: regulated domains (legal, medical, financial) trigger
+        stricter analysis where any unverifiable claim is flagged high.
+        """
         script_text = self._extract_script_text(script_blocks)
+
+        # Build domain-specific system instruction
+        regulated_domains = {"legal", "medical", "financial"}
+        if domain in regulated_domains:
+            domain_instruction = (
+                f"CRITICAL: This is {domain} content. Apply maximum scrutiny. "
+                f"ANY claim that states a specific fact, statistic, regulation, dosage, "
+                f"case law, financial figure, or professional recommendation MUST be flagged "
+                f"as 'high' severity unless it is universally accepted common knowledge. "
+                f"When in doubt, flag it. False negatives in {domain} content are dangerous. "
+                f"Every flagged claim MUST include at least one suggested verification source."
+            )
+        else:
+            domain_instruction = (
+                "Flag verifiable factual claims that could mislead listeners. "
+                "Avoid flagging obvious opinions, subjective preferences, or clearly hypothetical statements."
+            )
+
+        # Build context sections
+        context_sections = ""
+        if content_rules:
+            context_sections += f"\n\nContent Rules (from brand profile — violations should be flagged as high severity):\n"
+            for rule in content_rules:
+                context_sections += f"- {rule}\n"
+
+        if known_facts:
+            context_sections += f"\n\nKnown Facts (from knowledge base — cross-reference claims against these):\n"
+            for fact in known_facts[:50]:  # Cap at 50 to stay within token limits
+                context_sections += f"- {fact}\n"
 
         prompt = f"""Analyze this podcast script for claims that may need fact-checking.
 
+Domain: {domain}
+{context_sections}
+
 Script:
-{script_text[:10000]}
+{script_text[:15000]}
 
 For each claim that should be verified, create a JSON object with:
-- "block_id": the block ID where the claim appears (if identifiable, otherwise null)
-- "claim": the specific claim or statement
-- "severity": "high" (factual claim that could be wrong), "medium" (statistic or specific detail), or "low" (opinion presented as fact)
-- "suggestion": brief suggestion on how to verify or what to check
-- "context": surrounding context for the claim
+- "block_id": the block ID where the claim appears (if identifiable from the text, otherwise null)
+- "claim": the specific claim or statement (quote it exactly from the script)
+- "severity": "high" (factual claim that could be wrong or mislead), "medium" (statistic or specific detail worth checking), or "low" (opinion presented as fact or minor inaccuracy)
+- "confidence": a float from 0.0 to 1.0 representing how confident you are this claim is problematic (1.0 = almost certainly wrong, 0.5 = uncertain, 0.1 = probably fine but worth checking)
+- "suggestion": specific action to verify — name the source, database, or authority to check against
+- "sources": array of 1-3 suggested URLs or reference names where this claim could be verified (e.g., "CDC guidelines", "SEC filing database", "PubMed"). Use real, well-known reference sources
+- "context": the surrounding sentence or phrase for locating this claim in the script
 
 Return a JSON array of flagged claims. If no claims need checking, return an empty array.
 Output ONLY valid JSON. No markdown, no code fences."""
 
+        system_prompt = (
+            f"You are a professional fact-checker specializing in {domain} podcast content. "
+            f"{domain_instruction} "
+            f"You MUST NOT invent facts, URLs, or statistics. If you are unsure whether a claim "
+            f"is accurate, flag it and say so — never assume it is correct. "
+            f"Output only valid JSON arrays."
+        )
+
         message = await self.client.messages.create(
             model="claude-sonnet-4-20250514",
-            max_tokens=2048,
-            system="You are a fact-checker for podcast content. Be thorough but avoid flagging obvious opinions or subjective statements. Focus on verifiable claims. Output only valid JSON arrays.",
+            max_tokens=4096,
+            system=system_prompt,
             messages=[{"role": "user", "content": prompt}],
         )
 

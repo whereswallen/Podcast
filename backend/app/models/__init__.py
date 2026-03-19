@@ -10,6 +10,7 @@ from app.models.intro_outro import IntroOutroTemplate
 from app.models.knowledge import KnowledgeEntry
 from app.models.voice_clone import VoiceCloneJob
 from app.models.credit import CreditBalance, CreditTransaction
+from app.models.fact_check import FactCheckResult
 
 __all__ = [
     "Base",
@@ -27,4 +28,5 @@ __all__ = [
     "VoiceCloneJob",
     "CreditBalance",
     "CreditTransaction",
+    "FactCheckResult",
 ]

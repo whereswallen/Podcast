@@ -23,5 +23,6 @@ class BrandProfile(TimestampMixin, Base):
     default_music_id = Column(String(100), nullable=True)
     default_sfx_ids = Column(JSON, nullable=True, default=list)
     brand_colors = Column(JSON, nullable=True, default=dict)  # {"primary": "#hex"}
+    domain = Column(String(30), nullable=True, default="general")  # general/legal/medical/financial/technical
 
     podcast = relationship("Podcast", backref="brand_profile")

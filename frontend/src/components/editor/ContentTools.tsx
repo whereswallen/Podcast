@@ -11,8 +11,13 @@ import {
   Loader2,
   Copy,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
+  RotateCcw,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -22,6 +27,7 @@ import type {
   Transcript,
   SEOMetadata,
   FactCheckItem,
+  FactCheckSummary,
   ContentSuggestion,
 } from "@/types";
 
@@ -56,8 +62,10 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
   const [showNotes, setShowNotes] = useState<ShowNotes | null>(null);
   const [transcript, setTranscript] = useState<Transcript | null>(null);
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
-  const [factChecks, setFactChecks] = useState<FactCheckItem[] | null>(null);
+  const [factCheckSummary, setFactCheckSummary] = useState<FactCheckSummary | null>(null);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[] | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolveNote, setResolveNote] = useState("");
 
   const toggleSection = (section: ToolSection) => {
     setActiveSection(activeSection === section ? null : section);
@@ -90,8 +98,8 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
           break;
         }
         case "fact-check": {
-          const res = await api.post<FactCheckItem[]>(`/api/ai/episodes/${episodeId}/fact-check`);
-          setFactChecks(res.data);
+          const res = await api.post<FactCheckSummary>(`/api/ai/episodes/${episodeId}/fact-check`);
+          setFactCheckSummary(res.data);
           break;
         }
         case "suggestions": {
@@ -156,7 +164,7 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
                     (tool.id === "show-notes" && showNotes) ||
                     (tool.id === "transcript" && transcript) ||
                     (tool.id === "seo" && seoData) ||
-                    (tool.id === "fact-check" && factChecks) ||
+                    (tool.id === "fact-check" && factCheckSummary) ||
                     (tool.id === "suggestions" && suggestions);
                   if (!hasData) runTool(tool.id);
                 }
@@ -296,26 +304,153 @@ export function ContentTools({ episodeId, podcastId }: ContentToolsProps) {
                     )}
 
                     {/* Fact Check */}
-                    {tool.id === "fact-check" && factChecks && (
+                    {tool.id === "fact-check" && factCheckSummary && (
                       <div className="space-y-2">
-                        {factChecks.length === 0 ? (
+                        {/* Publish gate banner */}
+                        {factCheckSummary.publish_blocked && (
+                          <div className="flex items-center gap-2 p-2 rounded-md bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700">
+                            <ShieldAlert className="w-4 h-4 text-red-600 flex-shrink-0" />
+                            <div>
+                              <p className="font-semibold text-red-700 dark:text-red-400">Publishing Blocked</p>
+                              <p className="text-red-600 dark:text-red-400 opacity-80">
+                                {factCheckSummary.unresolved_high} unresolved high-severity flag{factCheckSummary.unresolved_high !== 1 ? "s" : ""}.
+                                {factCheckSummary.domain && factCheckSummary.domain !== "general" && (
+                                  <> Domain: <strong>{factCheckSummary.domain}</strong> — all high-severity claims must be verified.</>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {!factCheckSummary.publish_blocked && factCheckSummary.total > 0 && (
+                          <div className="flex items-center gap-2 p-2 rounded-md bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                            <ShieldCheck className="w-3.5 h-3.5 text-green-600" />
+                            <p className="text-green-700 dark:text-green-400">Publishing allowed — no blocking flags.</p>
+                          </div>
+                        )}
+
+                        {/* Summary stats */}
+                        {factCheckSummary.total > 0 && (
+                          <div className="flex items-center gap-3 text-[10px] text-[hsl(var(--muted-foreground))]">
+                            <span>{factCheckSummary.total} total</span>
+                            {factCheckSummary.unresolved_high > 0 && <span className="text-red-600">{factCheckSummary.unresolved_high} high</span>}
+                            {factCheckSummary.unresolved_medium > 0 && <span className="text-amber-600">{factCheckSummary.unresolved_medium} medium</span>}
+                            {factCheckSummary.unresolved_low > 0 && <span className="text-blue-600">{factCheckSummary.unresolved_low} low</span>}
+                            {factCheckSummary.domain && <span>Domain: {factCheckSummary.domain}</span>}
+                          </div>
+                        )}
+
+                        {factCheckSummary.items.length === 0 ? (
                           <p className="text-[hsl(var(--muted-foreground))] py-2 text-center">
                             No claims flagged for fact-checking.
                           </p>
                         ) : (
-                          factChecks.map((item, i) => (
+                          factCheckSummary.items.map((item) => (
                             <div
-                              key={i}
-                              className={`p-2 rounded-md ${severityColor[item.severity] || ""}`}
+                              key={item.id}
+                              className={`p-2 rounded-md ${item.resolved ? "bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400 opacity-70" : severityColor[item.severity] || ""}`}
                             >
+                              {/* Header row: severity + confidence + resolved status */}
                               <div className="flex items-center gap-1.5 mb-1">
-                                <AlertTriangle className="w-3 h-3" />
-                                <Badge variant={item.severity === "high" ? "destructive" : item.severity === "medium" ? "warning" : "default"}>
+                                {item.resolved ? (
+                                  <CheckCircle2 className="w-3 h-3" />
+                                ) : (
+                                  <AlertTriangle className="w-3 h-3" />
+                                )}
+                                <Badge variant={item.resolved ? "secondary" : item.severity === "high" ? "destructive" : item.severity === "medium" ? "warning" : "default"}>
                                   {item.severity}
                                 </Badge>
+                                <span className="text-[10px] opacity-60 ml-auto">
+                                  {Math.round(item.confidence * 100)}% confidence
+                                </span>
                               </div>
-                              <p className="font-medium">{item.claim}</p>
+
+                              {/* Claim text */}
+                              <p className={`font-medium ${item.resolved ? "line-through opacity-60" : ""}`}>{item.claim}</p>
                               <p className="mt-0.5 opacity-80">{item.suggestion}</p>
+
+                              {/* Sources */}
+                              {item.sources && item.sources.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {item.sources.map((src, si) => (
+                                    <span key={si} className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded bg-white/50 dark:bg-black/20">
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                      {src}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Resolution note (if resolved) */}
+                              {item.resolved && item.resolution_note && (
+                                <p className="mt-1 text-[10px] italic opacity-60">
+                                  Verified: {item.resolution_note}
+                                </p>
+                              )}
+
+                              {/* Resolve / Unresolve actions */}
+                              {!item.resolved && resolvingId !== item.id && (
+                                <button
+                                  onClick={() => { setResolvingId(item.id); setResolveNote(""); }}
+                                  className="mt-1.5 flex items-center gap-1 text-[10px] font-medium hover:underline opacity-70 hover:opacity-100"
+                                >
+                                  <CheckCircle2 className="w-3 h-3" /> Mark as verified
+                                </button>
+                              )}
+
+                              {!item.resolved && resolvingId === item.id && (
+                                <div className="mt-1.5 space-y-1">
+                                  <textarea
+                                    value={resolveNote}
+                                    onChange={(e) => setResolveNote(e.target.value)}
+                                    placeholder="How did you verify this claim? (required)"
+                                    className="w-full text-[10px] p-1.5 rounded border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))] resize-none"
+                                    rows={2}
+                                  />
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      disabled={!resolveNote.trim()}
+                                      onClick={async () => {
+                                        try {
+                                          await api.post(`/api/ai/episodes/${episodeId}/fact-check/${item.id}/resolve`, { resolution_note: resolveNote });
+                                          const res = await api.get<FactCheckSummary>(`/api/ai/episodes/${episodeId}/fact-check`);
+                                          setFactCheckSummary(res.data);
+                                        } catch { /* error handled by parent */ }
+                                        setResolvingId(null);
+                                        setResolveNote("");
+                                      }}
+                                      className="text-[10px] h-6"
+                                    >
+                                      Confirm
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => { setResolvingId(null); setResolveNote(""); }}
+                                      className="text-[10px] h-6"
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {item.resolved && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await api.post(`/api/ai/episodes/${episodeId}/fact-check/${item.id}/unresolve`);
+                                      const res = await api.get<FactCheckSummary>(`/api/ai/episodes/${episodeId}/fact-check`);
+                                      setFactCheckSummary(res.data);
+                                    } catch { /* error handled by parent */ }
+                                  }}
+                                  className="mt-1 flex items-center gap-1 text-[10px] font-medium hover:underline opacity-60 hover:opacity-100"
+                                >
+                                  <RotateCcw className="w-3 h-3" /> Re-open
+                                </button>
+                              )}
                             </div>
                           ))
                         )}

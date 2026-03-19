@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
+from app.models.brand import BrandProfile
 from app.models.episode import Episode
+from app.models.fact_check import FactCheckResult
 from app.models.podcast import Podcast
 from app.models.script import Script
 from app.models.user import User
@@ -107,11 +109,56 @@ def update_episode(
 ) -> EpisodeResponse:
     episode = _verify_episode_ownership(episode_id, current_user, db)
     update_data = payload.model_dump(exclude_unset=True)
+
+    # Publish gate: block transition to "published" if unresolved high-severity fact-checks exist
+    if update_data.get("status") == "published":
+        _enforce_publish_gate(episode, db)
+
     for field, value in update_data.items():
         setattr(episode, field, value)
     db.commit()
     db.refresh(episode)
     return EpisodeResponse.model_validate(episode)
+
+
+def _enforce_publish_gate(episode: Episode, db: Session) -> None:
+    """Block publishing if unresolved high-severity fact-check flags exist.
+
+    Regulated domains (legal, medical, financial) block on ANY unresolved
+    high-severity flag. General domains block when 3+ exist.
+    """
+    unresolved_high = (
+        db.query(FactCheckResult)
+        .filter(
+            FactCheckResult.episode_id == episode.id,
+            FactCheckResult.severity == "high",
+            FactCheckResult.resolved.is_(False),
+        )
+        .count()
+    )
+    if unresolved_high == 0:
+        return
+
+    # Determine domain from brand profile
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+    brand = db.query(BrandProfile).filter(BrandProfile.podcast_id == podcast.id).first() if podcast else None
+    domain = (brand.domain or "general") if brand else "general"
+
+    regulated = {"legal", "medical", "financial"}
+    if domain in regulated:
+        threshold = 1
+    else:
+        threshold = 3
+
+    if unresolved_high >= threshold:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Cannot publish: {unresolved_high} unresolved high-severity fact-check flag(s). "
+                f"Domain '{domain}' requires all high-severity claims to be verified before publishing. "
+                f"Resolve them at the Fact Check panel in Content Tools."
+            ),
+        )
 
 
 @episodes_router.delete("/{episode_id}", status_code=status.HTTP_204_NO_CONTENT)

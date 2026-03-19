@@ -4,7 +4,8 @@ Provides endpoints for show notes, transcripts, SEO metadata,
 fact-checking, content suggestions, and multi-language translation.
 """
 
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Literal, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,7 +14,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db
 from app.api.middleware.credit_check import CreditDeduction, require_credits
+from app.models.brand import BrandProfile
 from app.models.episode import Episode
+from app.models.fact_check import FactCheckResult
 from app.models.knowledge import KnowledgeEntry
 from app.models.podcast import Podcast
 from app.models.script import Script
@@ -56,12 +59,35 @@ class SEOMetadataResponse(BaseModel):
     episode_description: str
 
 
-class FactCheckItem(BaseModel):
+class FactCheckItemResponse(BaseModel):
+    id: str
     block_id: Optional[str] = None
     claim: str
-    severity: str  # high, medium, low
+    severity: Literal["high", "medium", "low"]
+    confidence: float
     suggestion: str
+    sources: list[str]
     context: Optional[str] = None
+    domain: Optional[str] = None
+    resolved: bool
+    resolved_at: Optional[str] = None
+    resolution_note: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class FactCheckResolveRequest(BaseModel):
+    resolution_note: str
+
+
+class FactCheckSummary(BaseModel):
+    items: list[FactCheckItemResponse]
+    total: int
+    unresolved_high: int
+    unresolved_medium: int
+    unresolved_low: int
+    publish_blocked: bool
+    domain: Optional[str] = None
 
 
 class ContentSuggestion(BaseModel):
@@ -91,6 +117,37 @@ def _get_episode_with_script(
     if not script or not script.content:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Episode has no script content")
     return episode, script
+
+
+def _get_brand_context(podcast_id: UUID, db: Session) -> tuple[Optional[BrandProfile], str, list[str]]:
+    """Fetch brand profile, domain, and content rules for fact-check context."""
+    brand = db.query(BrandProfile).filter(BrandProfile.podcast_id == podcast_id).first()
+    domain = (brand.domain or "general") if brand else "general"
+    content_rules = []
+    if brand and brand.content_rules:
+        content_rules.append(brand.content_rules)
+    return brand, domain, content_rules
+
+
+def _get_knowledge_facts(podcast_id: UUID, db: Session) -> list[str]:
+    """Fetch key_fact entries from knowledge base for cross-referencing."""
+    entries = (
+        db.query(KnowledgeEntry)
+        .filter(
+            KnowledgeEntry.podcast_id == podcast_id,
+            KnowledgeEntry.entry_type.in_(["key_fact", "source_material"]),
+            KnowledgeEntry.is_active.is_(True),
+        )
+        .limit(100)
+        .all()
+    )
+    facts = []
+    for e in entries:
+        line = e.title
+        if e.content:
+            line += f" — {e.content[:200]}"
+        facts.append(line)
+    return facts
 
 
 # ---- Endpoints ----
@@ -152,20 +209,229 @@ async def generate_seo_metadata(
     return SEOMetadataResponse(**result)
 
 
-@router.post("/episodes/{episode_id}/fact-check", response_model=list[FactCheckItem])
+@router.post("/episodes/{episode_id}/fact-check", response_model=FactCheckSummary)
 async def fact_check_script(
     episode_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     deduction: CreditDeduction = Depends(require_credits(5, "fact_check")),
-) -> list[FactCheckItem]:
-    """Flag claims in the script that may need fact-checking."""
+) -> FactCheckSummary:
+    """Flag claims in the script that may need fact-checking.
+
+    Results are persisted to the database. Episodes with unresolved
+    high-severity flags in regulated domains cannot be published.
+    """
     episode, script = _get_episode_with_script(episode_id, current_user, db)
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+
+    # Gather context for domain-aware checking
+    brand, domain, content_rules = _get_brand_context(podcast.id, db)
+    known_facts = _get_knowledge_facts(podcast.id, db)
 
     tools = ContentTools()
-    result = await tools.fact_check(script.content)
+    result = await tools.fact_check(
+        script_blocks=script.content,
+        domain=domain,
+        content_rules=content_rules,
+        known_facts=known_facts,
+    )
     deduction.commit(db, description=f"Fact check for '{episode.title}'", episode_id=episode_id)
-    return [FactCheckItem(**item) for item in result]
+
+    # Clear previous results for this episode and persist new ones
+    db.query(FactCheckResult).filter(FactCheckResult.episode_id == episode_id).delete(
+        synchronize_session="fetch"
+    )
+
+    persisted = []
+    for item in result:
+        row = FactCheckResult(
+            episode_id=episode_id,
+            block_id=item.get("block_id"),
+            claim=item["claim"],
+            severity=item.get("severity", "medium"),
+            confidence=item.get("confidence", 0.5),
+            suggestion=item["suggestion"],
+            sources=item.get("sources", []),
+            context=item.get("context"),
+            domain=domain,
+        )
+        db.add(row)
+        persisted.append(row)
+
+    db.commit()
+    for row in persisted:
+        db.refresh(row)
+
+    return _build_fact_check_summary(persisted, domain)
+
+
+@router.get("/episodes/{episode_id}/fact-check", response_model=FactCheckSummary)
+def get_fact_check_results(
+    episode_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FactCheckSummary:
+    """Retrieve persisted fact-check results for an episode."""
+    episode = db.query(Episode).filter(Episode.id == episode_id).first()
+    if not episode or episode.status == "deleted":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+    if not podcast or podcast.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    results = (
+        db.query(FactCheckResult)
+        .filter(FactCheckResult.episode_id == episode_id)
+        .order_by(FactCheckResult.created_at)
+        .all()
+    )
+
+    _, domain, _ = _get_brand_context(podcast.id, db)
+    return _build_fact_check_summary(results, domain)
+
+
+@router.post("/episodes/{episode_id}/fact-check/{item_id}/resolve", response_model=FactCheckItemResponse)
+def resolve_fact_check_item(
+    episode_id: UUID,
+    item_id: UUID,
+    payload: FactCheckResolveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FactCheckItemResponse:
+    """Mark a fact-check flag as resolved with a verification note.
+
+    Requires an explicit resolution_note explaining how the claim was
+    verified — the reviewer must attest they checked the claim.
+    """
+    # Verify ownership
+    episode = db.query(Episode).filter(Episode.id == episode_id).first()
+    if not episode or episode.status == "deleted":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+    if not podcast or podcast.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    item = db.query(FactCheckResult).filter(
+        FactCheckResult.id == item_id,
+        FactCheckResult.episode_id == episode_id,
+    ).first()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fact-check item not found")
+
+    if not payload.resolution_note.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Resolution note is required — explain how this claim was verified.",
+        )
+
+    item.resolved = True
+    item.resolved_by = current_user.id
+    item.resolved_at = datetime.now(timezone.utc)
+    item.resolution_note = payload.resolution_note.strip()
+    db.commit()
+    db.refresh(item)
+
+    return FactCheckItemResponse(
+        id=str(item.id),
+        block_id=item.block_id,
+        claim=item.claim,
+        severity=item.severity,
+        confidence=item.confidence,
+        suggestion=item.suggestion,
+        sources=item.sources or [],
+        context=item.context,
+        domain=item.domain,
+        resolved=item.resolved,
+        resolved_at=item.resolved_at.isoformat() if item.resolved_at else None,
+        resolution_note=item.resolution_note,
+    )
+
+
+@router.post("/episodes/{episode_id}/fact-check/{item_id}/unresolve", response_model=FactCheckItemResponse)
+def unresolve_fact_check_item(
+    episode_id: UUID,
+    item_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> FactCheckItemResponse:
+    """Re-open a previously resolved fact-check flag."""
+    episode = db.query(Episode).filter(Episode.id == episode_id).first()
+    if not episode or episode.status == "deleted":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Episode not found")
+    podcast = db.query(Podcast).filter(Podcast.id == episode.podcast_id).first()
+    if not podcast or podcast.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    item = db.query(FactCheckResult).filter(
+        FactCheckResult.id == item_id,
+        FactCheckResult.episode_id == episode_id,
+    ).first()
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Fact-check item not found")
+
+    item.resolved = False
+    item.resolved_by = None
+    item.resolved_at = None
+    item.resolution_note = None
+    db.commit()
+    db.refresh(item)
+
+    return FactCheckItemResponse(
+        id=str(item.id),
+        block_id=item.block_id,
+        claim=item.claim,
+        severity=item.severity,
+        confidence=item.confidence,
+        suggestion=item.suggestion,
+        sources=item.sources or [],
+        context=item.context,
+        domain=item.domain,
+        resolved=item.resolved,
+        resolved_at=None,
+        resolution_note=None,
+    )
+
+
+def _build_fact_check_summary(results: list[FactCheckResult], domain: str) -> FactCheckSummary:
+    """Build summary with publish-gate logic from persisted results."""
+    items = []
+    for r in results:
+        items.append(FactCheckItemResponse(
+            id=str(r.id),
+            block_id=r.block_id,
+            claim=r.claim,
+            severity=r.severity,
+            confidence=r.confidence,
+            suggestion=r.suggestion,
+            sources=r.sources or [],
+            context=r.context,
+            domain=r.domain,
+            resolved=r.resolved,
+            resolved_at=r.resolved_at.isoformat() if r.resolved_at else None,
+            resolution_note=r.resolution_note,
+        ))
+
+    unresolved_high = sum(1 for r in results if r.severity == "high" and not r.resolved)
+    unresolved_medium = sum(1 for r in results if r.severity == "medium" and not r.resolved)
+    unresolved_low = sum(1 for r in results if r.severity == "low" and not r.resolved)
+
+    # Publish gate: regulated domains block on ANY unresolved high-severity flag.
+    # General domain blocks only if 3+ unresolved high-severity flags exist.
+    regulated_domains = {"legal", "medical", "financial"}
+    if domain in regulated_domains:
+        publish_blocked = unresolved_high > 0
+    else:
+        publish_blocked = unresolved_high >= 3
+
+    return FactCheckSummary(
+        items=items,
+        total=len(items),
+        unresolved_high=unresolved_high,
+        unresolved_medium=unresolved_medium,
+        unresolved_low=unresolved_low,
+        publish_blocked=publish_blocked,
+        domain=domain,
+    )
 
 
 @router.post("/podcasts/{podcast_id}/content-suggestions", response_model=list[ContentSuggestion])
