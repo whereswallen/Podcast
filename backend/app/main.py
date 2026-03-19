@@ -1,9 +1,12 @@
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+from app.api.routes.ai import router as ai_router
 from app.api.routes.audio import router as audio_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.episodes import episodes_router, podcast_episodes_router
@@ -46,6 +49,12 @@ app.include_router(episodes_router)
 app.include_router(scripts_router)
 app.include_router(voices_router)
 app.include_router(audio_router)
+app.include_router(ai_router)
+
+# Mount static files for serving rendered audio
+media_dir = "/app/media"
+os.makedirs(media_dir, exist_ok=True)
+app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 
 @app.get("/api/health")

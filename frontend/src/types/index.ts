@@ -174,3 +174,23 @@ export interface PaginatedResponse<T> {
 export interface ApiError {
   detail: string;
 }
+
+// ---- Script Revision ----
+export interface ScriptRevision {
+  id: string;
+  script_id: string;
+  version: number;
+  content: ScriptBlock[];
+  created_at: string;
+}
+
+// ---- AI Inline ----
+export interface InlineRewriteRequest {
+  text: string;
+  instruction: string;
+  context?: string;
+}
+
+export interface InlineRewriteResponse {
+  text: string;
+}

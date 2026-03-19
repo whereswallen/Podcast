@@ -12,6 +12,7 @@ import {
   Mic2,
   CheckCircle,
   AlertCircle,
+  History,
 } from "lucide-react";
 import api from "@/lib/api";
 import { cn, countWords, estimateDuration, formatDuration } from "@/lib/utils";
@@ -23,6 +24,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScriptBlock } from "@/components/editor/ScriptBlock";
 import { GeneratePanel } from "@/components/editor/GeneratePanel";
 import { AudioPlayer } from "@/components/player/AudioPlayer";
+import { VersionHistory } from "@/components/editor/VersionHistory";
+import { BlockTimingBar } from "@/components/editor/BlockTimingBar";
 
 export default function EditorPage() {
   const params = useParams();
@@ -49,6 +52,7 @@ export default function EditorPage() {
   const [voiceAssignments, setVoiceAssignments] = useState<
     Record<string, string>
   >({});
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -67,6 +71,20 @@ export default function EditorPage() {
     fetchData();
     loadScript(episodeId);
   }, [fetchData, loadScript, episodeId]);
+
+  // Keyboard shortcut: Ctrl+S to save
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        if (isDirty && !isSaving) {
+          saveScript(episodeId);
+        }
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isDirty, isSaving, episodeId, saveScript]);
 
   // Derived data
   const speakers = useMemo(() => {
@@ -92,6 +110,18 @@ export default function EditorPage() {
         updateBlock(block.id, { voice_id: voiceId || undefined });
       }
     });
+  };
+
+  // Build context text for each block (prev + next block text)
+  const getBlockContext = (index: number): string => {
+    const parts: string[] = [];
+    if (index > 0) {
+      parts.push(`Previous: ${blocks[index - 1].text}`);
+    }
+    if (index < blocks.length - 1) {
+      parts.push(`Next: ${blocks[index + 1].text}`);
+    }
+    return parts.join("\n");
   };
 
   if (isLoading) {
@@ -150,6 +180,14 @@ export default function EditorPage() {
               Saved
             </div>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsHistoryOpen(true)}
+          >
+            <History className="w-4 h-4" />
+            History
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSave} disabled={!isDirty || isSaving}>
             <Save className="w-4 h-4" />
             Save
@@ -192,6 +230,7 @@ export default function EditorPage() {
                   onMoveDown={() => moveBlock(block.id, "down")}
                   isFirst={index === 0}
                   isLast={index === blocks.length - 1}
+                  contextText={getBlockContext(index)}
                 />
               ))}
               <div className="flex justify-center pt-2">
@@ -306,8 +345,19 @@ export default function EditorPage() {
         </div>
       </div>
 
+      {/* Block Timing Bar */}
+      <BlockTimingBar blocks={blocks} />
+
       {/* Bottom Audio Player */}
       <AudioPlayer episodeId={episodeId} />
+
+      {/* Version History Panel */}
+      <VersionHistory
+        episodeId={episodeId}
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        currentBlocks={blocks}
+      />
     </div>
   );
 }

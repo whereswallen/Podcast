@@ -1,14 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import {
+  Sparkles,
+  BookOpen,
+  BookMarked,
+  ArrowRightLeft,
+  Loader2,
+} from "lucide-react";
 import api from "@/lib/api";
 import { useEditorStore } from "@/stores/editor";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import type { GenerateScriptRequest, GenerateScriptResponse, EpisodeFormat } from "@/types";
+import type {
+  GenerateScriptRequest,
+  GenerateScriptResponse,
+  EpisodeFormat,
+  InlineRewriteRequest,
+  InlineRewriteResponse,
+  ScriptBlock,
+} from "@/types";
 
 const formatOptions = [
   { value: "solo", label: "Solo" },
@@ -29,10 +42,16 @@ interface GeneratePanelProps {
   episodeId: string;
 }
 
+let quickActionBlockId = 1;
+function generateQuickBlockId(): string {
+  return `quick_block_${Date.now()}_${quickActionBlockId++}`;
+}
+
 export function GeneratePanel({ episodeId }: GeneratePanelProps) {
-  const { setScript } = useEditorStore();
+  const { setScript, blocks, updateBlock } = useEditorStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const [formData, setFormData] = useState<GenerateScriptRequest>({
     topic: "",
     format: "conversation",
@@ -58,6 +77,116 @@ export function GeneratePanel({ episodeId }: GeneratePanelProps) {
       setError(message);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleQuickAction = async (action: string) => {
+    if (blocks.length === 0) {
+      setError("Add some script blocks first before using quick actions.");
+      return;
+    }
+
+    setQuickActionLoading(action);
+    setError(null);
+
+    try {
+      if (action === "introduction") {
+        const contextText = blocks
+          .slice(0, 3)
+          .map((b) => `${b.speaker}: ${b.text}`)
+          .join("\n");
+
+        const payload: InlineRewriteRequest = {
+          text: contextText,
+          instruction:
+            "Generate an engaging introduction paragraph for a podcast episode that leads into this content. Write only the introduction text, not the existing content. Make it welcoming and set the stage for the topic.",
+          context: contextText,
+        };
+        const response = await api.post<InlineRewriteResponse>(
+          "/api/ai/rewrite-inline",
+          payload
+        );
+
+        const newBlock: ScriptBlock = {
+          id: generateQuickBlockId(),
+          order: 0,
+          speaker: "Host",
+          text: response.data.text,
+          stage_direction: "Introduction",
+        };
+
+        const { blocks: currentBlocks } = useEditorStore.getState();
+        const updatedBlocks = [newBlock, ...currentBlocks].map((b, i) => ({
+          ...b,
+          order: i,
+        }));
+
+        useEditorStore.setState({ blocks: updatedBlocks, isDirty: true });
+      } else if (action === "conclusion") {
+        const contextText = blocks
+          .slice(-3)
+          .map((b) => `${b.speaker}: ${b.text}`)
+          .join("\n");
+
+        const payload: InlineRewriteRequest = {
+          text: contextText,
+          instruction:
+            "Generate a strong conclusion paragraph for a podcast episode based on this content. Write only the conclusion text. Summarize key takeaways and give a compelling closing.",
+          context: contextText,
+        };
+        const response = await api.post<InlineRewriteResponse>(
+          "/api/ai/rewrite-inline",
+          payload
+        );
+
+        const { blocks: currentBlocks } = useEditorStore.getState();
+        const newBlock: ScriptBlock = {
+          id: generateQuickBlockId(),
+          order: currentBlocks.length,
+          speaker: "Host",
+          text: response.data.text,
+          stage_direction: "Conclusion",
+        };
+
+        const updatedBlocks = [...currentBlocks, newBlock].map((b, i) => ({
+          ...b,
+          order: i,
+        }));
+
+        useEditorStore.setState({ blocks: updatedBlocks, isDirty: true });
+      } else if (action === "improve-flow") {
+        // Rewrite all blocks to improve transitions
+        for (let i = 0; i < blocks.length; i++) {
+          const block = blocks[i];
+          const prevText = i > 0 ? blocks[i - 1].text : "";
+          const nextText = i < blocks.length - 1 ? blocks[i + 1].text : "";
+
+          const contextParts: string[] = [];
+          if (prevText) contextParts.push(`Previous block: ${prevText}`);
+          if (nextText) contextParts.push(`Next block: ${nextText}`);
+
+          const payload: InlineRewriteRequest = {
+            text: block.text,
+            instruction:
+              "Improve the flow and transitions of this text. Make it connect smoothly with the surrounding content while keeping the core message intact. Only return the improved version of this specific text.",
+            context: contextParts.join("\n"),
+          };
+
+          const response = await api.post<InlineRewriteResponse>(
+            "/api/ai/rewrite-inline",
+            payload
+          );
+
+          updateBlock(block.id, { text: response.data.text });
+        }
+      }
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Quick action failed. Please try again.";
+      setError(message);
+    } finally {
+      setQuickActionLoading(null);
     }
   };
 
@@ -140,6 +269,51 @@ export function GeneratePanel({ episodeId }: GeneratePanelProps) {
         <Sparkles className="w-4 h-4" />
         {isGenerating ? "Generating..." : "Generate Script"}
       </Button>
+
+      {/* Quick Actions */}
+      <div className="border-t border-[hsl(var(--border))] pt-4">
+        <h4 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">
+          Quick Actions
+        </h4>
+        <div className="space-y-2">
+          <button
+            onClick={() => handleQuickAction("introduction")}
+            disabled={quickActionLoading !== null}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+          >
+            {quickActionLoading === "introduction" ? (
+              <Loader2 className="w-4 h-4 animate-spin text-accent-500" />
+            ) : (
+              <BookOpen className="w-4 h-4 text-accent-500" />
+            )}
+            Add Introduction
+          </button>
+          <button
+            onClick={() => handleQuickAction("conclusion")}
+            disabled={quickActionLoading !== null}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+          >
+            {quickActionLoading === "conclusion" ? (
+              <Loader2 className="w-4 h-4 animate-spin text-accent-500" />
+            ) : (
+              <BookMarked className="w-4 h-4 text-accent-500" />
+            )}
+            Add Conclusion
+          </button>
+          <button
+            onClick={() => handleQuickAction("improve-flow")}
+            disabled={quickActionLoading !== null}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--background))] text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors disabled:opacity-50"
+          >
+            {quickActionLoading === "improve-flow" ? (
+              <Loader2 className="w-4 h-4 animate-spin text-accent-500" />
+            ) : (
+              <ArrowRightLeft className="w-4 h-4 text-accent-500" />
+            )}
+            Improve Flow
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

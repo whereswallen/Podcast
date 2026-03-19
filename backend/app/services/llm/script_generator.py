@@ -145,3 +145,32 @@ Rewrite ONLY these blocks according to the instruction. Keep the same block IDs,
             rewritten.append(block)
 
         return rewritten
+
+    async def rewrite_inline(self, text: str, instruction: str, context: str | None = None) -> str:
+        """Rewrite a single text block based on an instruction."""
+        # Parse instruction type
+        instruction_map = {
+            "rewrite": "Rewrite this text in a different way while keeping the same meaning.",
+            "expand": "Expand this text with more detail, examples, and depth. Make it 2-3x longer.",
+            "condense": "Condense this text to be shorter and more concise while keeping key points. Make it about half the length.",
+            "formal": "Rewrite this in a more formal, professional tone.",
+            "casual": "Rewrite this in a more casual, conversational tone.",
+            "energetic": "Rewrite this with more energy and enthusiasm.",
+            "dramatic": "Rewrite this with more dramatic flair and impact.",
+        }
+
+        system = "You are a podcast script editor. Output ONLY the rewritten text. No explanations, no quotes, no markdown."
+
+        instruction_text = instruction_map.get(instruction, instruction)
+
+        prompt = f"Text to modify:\n\n{text}\n\nInstruction: {instruction_text}"
+        if context:
+            prompt += f"\n\nSurrounding context for reference:\n{context}"
+
+        message = await self.client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=2048,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return message.content[0].text.strip()

@@ -1,6 +1,13 @@
 import { create } from "zustand";
 import api from "@/lib/api";
-import type { Script, ScriptBlock, SaveScriptRequest } from "@/types";
+import type {
+  Script,
+  ScriptBlock,
+  SaveScriptRequest,
+  ScriptRevision,
+  InlineRewriteRequest,
+  InlineRewriteResponse,
+} from "@/types";
 
 interface EditorState {
   script: Script | null;
@@ -10,6 +17,7 @@ interface EditorState {
   isLoading: boolean;
   isSaving: boolean;
   error: string | null;
+  revisions: ScriptRevision[];
   setScript: (script: Script) => void;
   updateBlock: (blockId: string, updates: Partial<ScriptBlock>) => void;
   addBlock: (afterBlockId?: string) => void;
@@ -19,6 +27,9 @@ interface EditorState {
   saveScript: (episodeId: string) => Promise<void>;
   loadScript: (episodeId: string) => Promise<void>;
   clearEditor: () => void;
+  loadRevisions: (episodeId: string) => Promise<void>;
+  restoreRevision: (episodeId: string, version: number) => Promise<void>;
+  rewriteBlock: (blockId: string, instruction: string, context?: string) => Promise<void>;
 }
 
 let nextBlockId = 1;
@@ -35,6 +46,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   isLoading: false,
   isSaving: false,
   error: null,
+  revisions: [],
 
   setScript: (script: Script) => {
     set({
@@ -182,6 +194,76 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       selectedBlockId: null,
       isDirty: false,
       error: null,
+      revisions: [],
     });
+  },
+
+  loadRevisions: async (episodeId: string) => {
+    try {
+      const response = await api.get<ScriptRevision[]>(
+        `/api/episodes/${episodeId}/script/revisions`
+      );
+      set({ revisions: response.data });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to load revisions.";
+      set({ error: message });
+    }
+  },
+
+  restoreRevision: async (episodeId: string, version: number) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.post(
+        `/api/episodes/${episodeId}/script/revisions/${version}/restore`
+      );
+      // Reload the script after restoring
+      const response = await api.get<Script>(
+        `/api/episodes/${episodeId}/script`
+      );
+      const script = response.data;
+      set({
+        script,
+        blocks: script.blocks || [],
+        isLoading: false,
+        isDirty: false,
+      });
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to restore revision.";
+      set({ error: message, isLoading: false });
+    }
+  },
+
+  rewriteBlock: async (blockId: string, instruction: string, context?: string) => {
+    const { blocks } = get();
+    const block = blocks.find((b) => b.id === blockId);
+    if (!block) return;
+
+    try {
+      const payload: InlineRewriteRequest = {
+        text: block.text,
+        instruction,
+        context,
+      };
+      const response = await api.post<InlineRewriteResponse>(
+        "/api/ai/rewrite-inline",
+        payload
+      );
+      set((state) => ({
+        blocks: state.blocks.map((b) =>
+          b.id === blockId ? { ...b, text: response.data.text } : b
+        ),
+        isDirty: true,
+      }));
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Failed to rewrite block.";
+      set({ error: message });
+      throw new Error(message);
+    }
   },
 }));
